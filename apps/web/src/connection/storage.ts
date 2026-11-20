@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   ConnectionCatalogDocument,
   type ConnectionCatalogDocument as ConnectionCatalogDocumentType,
@@ -96,7 +98,10 @@ const encodeStoredVcsRefs = Schema.encodeEffect(StoredVcsRefsJson);
 function catalogError(operation: string, cause: unknown) {
   return new ConnectionTransientError({
     reason: "remote-unavailable",
-    detail: `Could not ${operation} the local connection catalog: ${String(cause)}`,
+    detail: translateMessage(msg("Could not {value0} the local connection catalog: {value1}"), {
+      value0: operation,
+      value1: String(cause),
+    }),
   });
 }
 
@@ -124,7 +129,10 @@ function persistenceError(
 ) {
   return new Persistence.ConnectionPersistenceError({
     operation,
-    message: `Could not ${operation.replaceAll("-", " ")}: ${String(cause)}`,
+    message: translateMessage(msg("Could not {value0}: {value1}"), {
+      value0: operation.replaceAll("-", " "),
+      value1: String(cause),
+    }),
   });
 }
 
@@ -675,7 +683,9 @@ export function makeBrowserPullRequestRoutingPermissions(
       if (connectionKey === null)
         return yield* new ConnectionBlockedError({
           reason: "configuration",
-          detail: "This environment does not have a saved connection endpoint.",
+          detail: translateMessage(
+            msg("This environment does not have a saved connection endpoint."),
+          ),
         });
       return yield* write(
         entry.target.environmentId,

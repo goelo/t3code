@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   type EnvironmentThreadShell,
   type PendingSubagentRequest,
@@ -143,16 +145,16 @@ export function startThreadNotifications(
     const active = activeThread();
     const title =
       kind === "completion"
-        ? "Thread completed"
+        ? translateMessage(msg("Thread completed"))
         : status === "approval"
-          ? "Approval needed"
+          ? translateMessage(msg("Approval needed"))
           : status === "limited"
-            ? "Usage limit reached"
+            ? translateMessage(msg("Usage limit reached"))
             : status === "failed"
-              ? "Thread failed"
+              ? translateMessage(msg("Thread failed"))
               : status === "request"
-                ? "Guest request"
-                : "Input needed";
+                ? translateMessage(msg("Guest request"))
+                : translateMessage(msg("Input needed"));
     if (hasNotificationSound(mode)) {
       void playNotificationSound(kind, () =>
         hasNotificationSound(getClientSettings().notificationMode),

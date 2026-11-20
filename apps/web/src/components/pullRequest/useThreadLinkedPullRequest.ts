@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   type EnvironmentId,
   type ProjectId,
@@ -89,7 +91,7 @@ export function useThreadLinkedPullRequest(input: {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Unable to update the thread pull request",
+          title: translateMessage(msg("Unable to update the thread pull request")),
           description: error instanceof Error ? error.message : "An error occurred.",
         }),
       );

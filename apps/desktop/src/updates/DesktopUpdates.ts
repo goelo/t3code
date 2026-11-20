@@ -7,6 +7,7 @@ import {
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
 } from "@t3tools/contracts";
+import { desktopT } from "../i18n.ts";
 import { errorTag } from "@t3tools/shared/observability";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -308,7 +309,7 @@ function createBaseUpdateState(
     ...createInitialDesktopUpdateState(environment.appVersion, environment.runtimeInfo, channel),
     enabled,
     status: enabled ? "idle" : "disabled",
-    message: Option.getOrNull(disabledReason),
+    message: Option.isSome(disabledReason) ? desktopT(disabledReason.value) : null,
   };
 }
 

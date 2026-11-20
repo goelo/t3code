@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { DesktopBridge, DesktopUpdateState } from "@t3tools/contracts";
 
 const FALLBACK_TRIAGE_COMMAND = "npx t3 triage";
@@ -297,7 +299,7 @@ export function showBootError(error: unknown) {
   const copyCommand = element("button", {
     className: "boot-error-icon",
     type: "button",
-    title: "Copy command",
+    title: translateMessage(msg("Copy command")),
     innerHTML: COPY_ICON,
   });
   copyCommand.setAttribute("aria-label", "Copy command");

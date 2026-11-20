@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { RelayClientDeviceRecord } from "@t3tools/contracts/relay";
 
 const mobileClientUpdatedAtFormatter = new Intl.DateTimeFormat(undefined, {
@@ -21,7 +23,7 @@ export function mobileClientPlatformLabel(device: RelayClientDeviceRecord): stri
       : device.iosMajorVersion === null
         ? "iOS"
         : `iOS ${device.iosMajorVersion}`;
-  return `${platform}${device.appVersion ? ` · T3 Code ${device.appVersion}` : ""}`;
+  return `${platform}${device.appVersion ? translateMessage(msg(" · T3 Code {value0}"), { value0: device.appVersion }) : ""}`;
 }
 
 export function mobileClientNotificationDetail(device: RelayClientDeviceRecord): string {
@@ -40,6 +42,8 @@ export function mobileClientNotificationDetail(device: RelayClientDeviceRecord):
 export function mobileClientUpdatedAtLabel(updatedAt: string): string {
   const date = new Date(updatedAt);
   return Number.isNaN(date.getTime())
-    ? "Update time unavailable"
-    : `Updated ${mobileClientUpdatedAtFormatter.format(date)}`;
+    ? translateMessage(msg("Update time unavailable"))
+    : translateMessage(msg("Updated {value0}"), {
+        value0: mobileClientUpdatedAtFormatter.format(date),
+      });
 }

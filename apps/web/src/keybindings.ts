@@ -1,3 +1,5 @@
+import { translateMessage } from "./i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   type KeybindingCommand,
   type KeybindingShortcut,
@@ -218,10 +220,10 @@ export function formatShortcutKeyLabel(key: string): string {
   if (key === " ") return "Space";
   if (key.length === 1) return key.toUpperCase();
   if (key === "escape") return "Esc";
-  if (key === "arrowup") return "Up";
-  if (key === "arrowdown") return "Down";
-  if (key === "arrowleft") return "Left";
-  if (key === "arrowright") return "Right";
+  if (key === "arrowup") return translateMessage(msg("Up"));
+  if (key === "arrowdown") return translateMessage(msg("Down"));
+  if (key === "arrowleft") return translateMessage(msg("Left"));
+  if (key === "arrowright") return translateMessage(msg("Right"));
   return key.slice(0, 1).toUpperCase() + key.slice(1);
 }
 

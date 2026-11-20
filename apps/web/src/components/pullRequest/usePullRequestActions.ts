@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { useAtomCommand } from "~/state/use-atom-command";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
@@ -310,14 +313,14 @@ export function usePullRequestHandoffs({
     if (opened === null) {
       toastManager.add({
         type: "error",
-        title: "Could not open a thread",
-        description: "Try again from the project, or open a thread first.",
+        title: translateMessage(msg("Could not open a thread")),
+        description: translateMessage(msg("Try again from the project, or open a thread first.")),
       });
       return;
     }
     toastManager.add({
       type: "success",
-      title: "Asked in a thread",
+      title: translateMessage(msg("Asked in a thread")),
       description:
         task.prompt.length > 0
           ? "The question is in the composer. Read it over, then send."
@@ -337,7 +340,9 @@ export function usePullRequestHandoffs({
     // Explicit timeouts survive toast updates and would pin the result after loading.
     const toastId = toastManager.add({
       type: "loading",
-      title: `Preparing the ${terminology.singular} checkout...`,
+      title: translateMessage(msg("Preparing the {value0} checkout..."), {
+        value0: terminology.singular,
+      }),
       data: {
         onClose: () => {
           cancelled = true;
@@ -358,8 +363,8 @@ export function usePullRequestHandoffs({
       setHandoff(null);
       toastManager.update(toastId, {
         type: "error",
-        title: "Could not open a thread for the checkout",
-        description: "Try again from the project, or open a thread first.",
+        title: translateMessage(msg("Could not open a thread for the checkout")),
+        description: translateMessage(msg("Try again from the project, or open a thread first.")),
       });
       return;
     }
@@ -376,7 +381,9 @@ export function usePullRequestHandoffs({
       setHandoff(null);
       toastManager.update(toastId, {
         type: "error",
-        title: `Could not prepare the ${terminology.singular} checkout`,
+        title: translateMessage(msg("Could not prepare the {value0} checkout"), {
+          value0: terminology.singular,
+        }),
         description: checkoutFailureDescription(
           isAtomCommandInterrupted(prepared) ? undefined : squashAtomCommandFailure(prepared),
         ),
@@ -399,8 +406,13 @@ export function usePullRequestHandoffs({
       setHandoff(null);
       toastManager.update(toastId, {
         type: "error",
-        title: "Checked out, but the thread stayed where it was",
-        description: `The checkout is ready on \`${prepared.value.branch}\`. Point a thread at it from the branch picker, then ask again.`,
+        title: translateMessage(msg("Checked out, but the thread stayed where it was")),
+        description: translateMessage(
+          msg(
+            "The checkout is ready on `{value0}`. Point a thread at it from the branch picker, then ask again.",
+          ),
+          { value0: prepared.value.branch },
+        ),
       });
       return;
     }
@@ -436,8 +448,10 @@ export function usePullRequestHandoffs({
       prepared.value.isOnPullRequestHead
         ? {
             type: "success",
-            title: "Checkout ready",
-            description: "The task is in the composer. Read it over, then send.",
+            title: translateMessage(msg("Checkout ready")),
+            description: translateMessage(
+              msg("The task is in the composer. Read it over, then send."),
+            ),
           }
         : offHeadPullRequestCheckoutToast(terminology),
     );

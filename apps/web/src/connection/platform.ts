@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   ClientCapabilities,
   PlatformConnectionSource,
@@ -174,7 +176,9 @@ function sshPreparationError(cause: unknown) {
   }
   return new ConnectionTransientError({
     reason: "remote-unavailable",
-    detail: `Could not prepare the SSH environment: ${message}`,
+    detail: translateMessage(msg("Could not prepare the SSH environment: {value0}"), {
+      value0: message,
+    }),
   });
 }
 
@@ -220,7 +224,7 @@ export const provisionDesktopSshEnvironment = Effect.fn(
   if (pairingToken === null) {
     return yield* new ConnectionBlockedError({
       reason: "authentication",
-      detail: "The SSH environment did not issue a pairing credential.",
+      detail: translateMessage(msg("The SSH environment did not issue a pairing credential.")),
     });
   }
   const descriptor = yield* Effect.tryPromise({
@@ -230,7 +234,12 @@ export const provisionDesktopSshEnvironment = Effect.fn(
   if (expectedEnvironmentId !== undefined && descriptor.environmentId !== expectedEnvironmentId) {
     return yield* new ConnectionBlockedError({
       reason: "configuration",
-      detail: `That host reaches ${descriptor.label}, a different machine. Add it as its own environment instead.`,
+      detail: translateMessage(
+        msg(
+          "That host reaches {value0}, a different machine. Add it as its own environment instead.",
+        ),
+        { value0: descriptor.label },
+      ),
     });
   }
   const access = yield* Effect.tryPromise({
@@ -248,7 +257,18 @@ export const provisionDesktopSshEnvironment = Effect.fn(
       }
       return new ConnectionBlockedError({
         reason: "configuration",
-        detail: `${descriptor.label} runs T3 Code ${descriptor.serverVersion}, but this desktop is ${APP_VERSION}, and that server could not accept its pairing. Restart the T3 server on ${descriptor.label} so it runs ${APP_VERSION}, then retry.`,
+        detail: translateMessage(
+          msg(
+            "{value0} runs T3 Code {value1}, but this desktop is {value2}, and that server could not accept its pairing. Restart the T3 server on {value3} so it runs {value4}, then retry.",
+          ),
+          {
+            value0: descriptor.label,
+            value1: descriptor.serverVersion,
+            value2: APP_VERSION,
+            value3: descriptor.label,
+            value4: APP_VERSION,
+          },
+        ),
       });
     },
   });
@@ -284,7 +304,12 @@ export const prepareDesktopSshEnvironment = Effect.fn("web.connectionPlatform.ss
       if (descriptor.environmentId !== input.expectedEnvironmentId) {
         return yield* new ConnectionBlockedError({
           reason: "configuration",
-          detail: `That host reaches ${descriptor.label}, a different machine. Add it as its own environment instead.`,
+          detail: translateMessage(
+            msg(
+              "That host reaches {value0}, a different machine. Add it as its own environment instead.",
+            ),
+            { value0: descriptor.label },
+          ),
         });
       }
       const session = yield* Effect.tryPromise({
@@ -338,7 +363,7 @@ const layerCapabilities = Layer.effectContext(
         if (session === null) {
           return yield* new ConnectionBlockedError({
             reason: "authentication",
-            detail: "Sign in to T3 Connect to connect this environment.",
+            detail: translateMessage(msg("Sign in to T3 Connect to connect this environment.")),
           });
         }
         const token = yield* session.readClerkToken().pipe(
@@ -353,7 +378,7 @@ const layerCapabilities = Layer.effectContext(
         if (token === null) {
           return yield* new ConnectionBlockedError({
             reason: "authentication",
-            detail: "The T3 Connect session is unavailable.",
+            detail: translateMessage(msg("The T3 Connect session is unavailable.")),
           });
         }
         return token;
@@ -368,7 +393,12 @@ const layerCapabilities = Layer.effectContext(
         catch: (cause) =>
           new ConnectionTransientError({
             reason: "remote-unavailable",
-            detail: `Could not load the desktop primary credential: ${String(cause)}`,
+            detail: translateMessage(
+              msg("Could not load the desktop primary credential: {value0}"),
+              {
+                value0: String(cause),
+              },
+            ),
           }),
       }).pipe(Effect.map(Option.fromNullishOr)),
     });
@@ -379,7 +409,9 @@ const layerCapabilities = Layer.effectContext(
           if (bridge === undefined) {
             return yield* new ConnectionBlockedError({
               reason: "unsupported",
-              detail: "SSH environments are only available in the desktop app.",
+              detail: translateMessage(
+                msg("SSH environments are only available in the desktop app."),
+              ),
             });
           }
           return yield* provisionDesktopSshEnvironment(bridge, target, expectedEnvironmentId);
@@ -390,7 +422,9 @@ const layerCapabilities = Layer.effectContext(
         if (bridge === undefined) {
           return yield* new ConnectionBlockedError({
             reason: "unsupported",
-            detail: "SSH environments are only available in the desktop app.",
+            detail: translateMessage(
+              msg("SSH environments are only available in the desktop app."),
+            ),
           });
         }
         return yield* prepareDesktopSshEnvironment(bridge, input);
@@ -406,7 +440,9 @@ const layerCapabilities = Layer.effectContext(
           catch: (cause) =>
             new ConnectionTransientError({
               reason: "remote-unavailable",
-              detail: `Could not disconnect the SSH environment: ${String(cause)}`,
+              detail: translateMessage(msg("Could not disconnect the SSH environment: {value0}"), {
+                value0: String(cause),
+              }),
             }),
         });
       }),
@@ -451,7 +487,9 @@ const loadSecondaryConnectionRegistration = Effect.fn(
   ) {
     return yield* new ConnectionTransientError({
       reason: "endpoint-unavailable",
-      detail: `Desktop-local backend ${entry.id} is not ready yet.`,
+      detail: translateMessage(msg("Desktop-local backend {value0} is not ready yet."), {
+        value0: entry.id,
+      }),
     });
   }
   const httpBaseUrl = entry.httpBaseUrl;

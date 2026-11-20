@@ -1,3 +1,4 @@
+import { T } from "gt-react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import {
   readHostCredentialSettings,
@@ -53,14 +54,17 @@ export function SourceControlAppAccessNotice(props: {
     >
       <T3AppIcon className="size-4 shrink-0" />
       <p className="min-w-0 flex-1">
-        {appSignIn.appName} isn't installed on <span className="text-foreground">{owner}</span>, so
-        requests here use your own GitHub login and its lower rate limit.
+        {appSignIn.appName}
+        <T> isn't installed on </T>
+        <span className="text-foreground">{owner}</span>
+        <T>, so requests here use your own GitHub login and its lower rate limit.</T>
       </p>
       <InlineButton
         className="shrink-0"
         render={<a href={appSignIn.installUrl} target="_blank" rel="noreferrer noopener" />}
       >
-        Install on {owner}
+        <T>Install on </T>
+        {owner}
         <ExternalLinkIcon aria-hidden className="size-3" />
       </InlineButton>
     </div>

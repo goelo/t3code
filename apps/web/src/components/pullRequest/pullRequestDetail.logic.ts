@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   parsePullRequestAnchor,
   pullRequestAnchorMatchesUrl,
@@ -51,9 +53,9 @@ import {
 import { inferReviewCommentFenceLanguage, type ReviewCommentContext } from "~/reviewCommentContext";
 
 export const PULL_REQUEST_MERGE_METHOD_LABELS: Record<PullRequestMergeMethod, string> = {
-  merge: "Merge",
-  squash: "Squash and merge",
-  rebase: "Rebase and merge",
+  merge: msg("Merge"),
+  squash: msg("Squash and merge"),
+  rebase: msg("Rebase and merge"),
 };
 
 export function allowsSinglePullRequestMerge(input: {
@@ -797,7 +799,7 @@ export function buildPullRequestTimeline(
       id: "created",
       at: detail.createdAt,
       kind: "opened" as const,
-      title: `opened this ${term}`,
+      title: translateMessage(msg("opened this {value0}"), { value0: term }),
       body: null,
       markdown: false,
       url: null,
@@ -813,7 +815,7 @@ export function buildPullRequestTimeline(
       id: commit.oid,
       at: commit.committedDate,
       kind: "commit" as const,
-      title: `Commit ${commit.oid.slice(0, 7)}`,
+      title: translateMessage(msg("Commit {value0}"), { value0: commit.oid.slice(0, 7) }),
       body: commit.messageHeadline || null,
       markdown: false,
       url: null,
@@ -852,7 +854,7 @@ export function buildPullRequestTimeline(
             id: "merged",
             at: detail.mergedAt,
             kind: "merged" as const,
-            title: `${capitalizeTerm(term)} merged`,
+            title: translateMessage(msg("{value0} merged"), { value0: capitalizeTerm(term) }),
             body: null,
             markdown: false,
             url: null,
@@ -872,7 +874,7 @@ export function buildPullRequestTimeline(
             id: "closed",
             at: detail.closedAt,
             kind: "closed" as const,
-            title: `${capitalizeTerm(term)} closed`,
+            title: translateMessage(msg("{value0} closed"), { value0: capitalizeTerm(term) }),
             body: null,
             markdown: false,
             url: null,

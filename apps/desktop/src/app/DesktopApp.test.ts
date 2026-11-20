@@ -101,6 +101,7 @@ it.effect.each([false, true])(
           Effect.provideService(ElectronApp.ElectronApp, {
             setPath: () => Effect.void,
             whenReady: record("ready"),
+            preferredSystemLanguages: Effect.succeed(["en-US"]),
           } as unknown as ElectronApp.ElectronApp["Service"]),
           Effect.provideService(ElectronDialog.ElectronDialog, {
             showErrorBox: () => Effect.die("unexpected fatal startup error"),
@@ -219,7 +220,7 @@ it.effect.each([false, true])(
             Layer.mock(ChildProcessSpawner.ChildProcessSpawner, {}),
             Layer.mock(DesktopBackendConfiguration.DesktopBackendConfiguration, {}),
             Layer.mock(DesktopCliCommand.DesktopCliCommand, {}),
-            Layer.mock(DesktopClientSettings.DesktopClientSettings, {}),
+            Layer.mock(DesktopClientSettings.DesktopClientSettings, { get: Effect.succeedNone }),
             Layer.mock(DesktopConnectionCatalogStore.DesktopConnectionCatalogStore, {}),
             Layer.mock(DesktopIpc.DesktopIpc, {}),
             Layer.mock(DesktopLocalEnvironmentAuth.DesktopLocalEnvironmentAuth, {}),

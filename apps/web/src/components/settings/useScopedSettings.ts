@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { useEnvironmentsWithScope } from "../../state/session";
 import {
@@ -53,7 +56,7 @@ function useRunScopedPlan() {
     if (plan.unavailableReason) {
       toastManager.add({
         type: "warning",
-        title: "Setting not saved",
+        title: translateMessage(msg("Setting not saved")),
         description: plan.unavailableReason,
       });
       onFailed?.();
@@ -70,7 +73,9 @@ function useRunScopedPlan() {
             Cause.fail(
               new EnvironmentAuthorizationError({
                 requiredScope: missing,
-                message: "This connection lacks permission to change these settings.",
+                message: translateMessage(
+                  msg("This connection lacks permission to change these settings."),
+                ),
               }),
             ),
           );

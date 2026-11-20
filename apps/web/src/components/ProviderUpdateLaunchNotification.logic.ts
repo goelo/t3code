@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   defaultInstanceIdForDriver,
   PROVIDER_DISPLAY_NAMES,
@@ -83,7 +85,12 @@ function getProviderUpdatedTitle(
 ): string {
   const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
   const version = provider.installedVersion ?? provider.version;
-  return version ? `${providerName} updated: ${formatVersion(version)}` : `${providerName} updated`;
+  return version
+    ? translateMessage(msg("{value0} updated: {value1}"), {
+        value0: providerName,
+        value1: formatVersion(version),
+      })
+    : translateMessage(msg("{value0} updated"), { value0: providerName });
 }
 
 // Only OpenCode reports an installed CLI apart from a running external server.
@@ -100,8 +107,8 @@ export function getProviderRestartNotice(
 
 function getProviderUpdatedDescription(providerCount: number): string {
   return providerCount === 1
-    ? "New sessions will use the updated provider."
-    : "New sessions will use the updated providers.";
+    ? translateMessage(msg("New sessions will use the updated provider."))
+    : translateMessage(msg("New sessions will use the updated providers."));
 }
 
 function getProviderFailedUpdateTitle(
@@ -110,8 +117,11 @@ function getProviderFailedUpdateTitle(
   const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
   const attemptedVersion = provider.versionAdvisory?.latestVersion;
   return attemptedVersion
-    ? `${providerName} ${formatVersion(attemptedVersion)} update failed`
-    : `${providerName} update failed`;
+    ? translateMessage(msg("{value0} {value1} update failed"), {
+        value0: providerName,
+        value1: formatVersion(attemptedVersion),
+      })
+    : translateMessage(msg("{value0} update failed"), { value0: providerName });
 }
 
 export function isProviderUpdateCandidate(
@@ -396,9 +406,16 @@ export function getProviderUpdateSidebarPillView(
         unchangedProviders.length === 1
           ? `${unchangedProviderName} still needs an update`
           : `${unchangedProviders.length} providers still need updates`,
-      description: `${formatProviderList(unchangedProviders)} ${
-        unchangedProviders.length === 1 ? "still appears" : "still appear"
-      } outdated. Review provider settings for details.`,
+      description: translateMessage(
+        msg("{value0} {value1} outdated. Review provider settings for details."),
+        {
+          value0: formatProviderList(unchangedProviders),
+          value1:
+            unchangedProviders.length === 1
+              ? translateMessage(msg("still appears"))
+              : translateMessage(msg("still appear")),
+        },
+      ),
       dismissible: true,
     });
   }
@@ -458,5 +475,7 @@ function getFailedProviderUpdateDescription(providers: ReadonlyArray<ServerProvi
       return provider.updateState.message;
     }
   }
-  return `${formatProviderList(providers)} failed to update. Check provider settings for details.`;
+  return translateMessage(msg("{value0} failed to update. Check provider settings for details."), {
+    value0: formatProviderList(providers),
+  });
 }

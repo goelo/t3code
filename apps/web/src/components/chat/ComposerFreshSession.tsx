@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import { EraserIcon } from "lucide-react";
 
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
@@ -8,8 +10,8 @@ export function freshSessionBannerItem(onUndo: () => void): ComposerBannerStackI
     id: "fresh-session",
     variant: "info",
     icon: <EraserIcon />,
-    title: "Your next message starts a fresh session",
-    description: "The agent won't see earlier messages in this thread.",
+    title: translateMessage(msg("Your next message starts a fresh session")),
+    description: translateMessage(msg("The agent won't see earlier messages in this thread.")),
     dismissLabel: "Keep the current session",
     onDismiss: onUndo,
   };

@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import {
   type EnvironmentId,
   type ModelSelection,
@@ -217,7 +220,10 @@ export function useMultipleModelSend(input: MultipleModelSendInput) {
         toastManager.add(
           stackedThreadToast({
             type: "success",
-            title: `Started ${startedCount} ${startedCount === 1 ? "thread" : "threads"} in background`,
+            title: translateMessage(msg("Started {value0} {value1} in background"), {
+              value0: startedCount,
+              value1: startedCount === 1 ? "thread" : "threads",
+            }),
           }),
         );
       }
@@ -254,9 +260,12 @@ export function useMultipleModelSend(input: MultipleModelSendInput) {
         const recoveryToastId = toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "A background prompt could not be sent",
-            description:
-              "Your newer draft is unchanged. Restore the failed prompt when this composer is empty.",
+            title: translateMessage(msg("A background prompt could not be sent")),
+            description: translateMessage(
+              msg(
+                "Your newer draft is unchanged. Restore the failed prompt when this composer is empty.",
+              ),
+            ),
             timeout: 0,
             actionProps: {
               children: "Restore prompt",
@@ -270,8 +279,11 @@ export function useMultipleModelSend(input: MultipleModelSendInput) {
                   )
                 ) {
                   toastManager.update(recoveryToastId, {
-                    description:
-                      "Return to the original draft and send or clear its current prompt before restoring.",
+                    description: translateMessage(
+                      msg(
+                        "Return to the original draft and send or clear its current prompt before restoring.",
+                      ),
+                    ),
                   });
                   return;
                 }

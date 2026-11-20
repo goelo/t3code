@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   executeAtomQuery,
   runAtomCommand,
@@ -193,7 +195,11 @@ export async function addProjectToMachine(input: AddProjectToMachineInput): Prom
         ? null
         : {
             phase: "failed",
-            title: `Could not copy ${failed.length} ${failed.length === 1 ? "file" : "files"} to ${input.target.label}`,
+            title: translateMessage(msg("Could not copy {value0} {value1} to {value2}"), {
+              value0: failed.length,
+              value1: failed.length === 1 ? "file" : "files",
+              value2: input.target.label,
+            }),
             failures: failed,
           },
     );

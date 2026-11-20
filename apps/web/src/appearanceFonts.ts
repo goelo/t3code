@@ -1,3 +1,5 @@
+import { translateMessage } from "./i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   DEFAULT_CODE_FONT_SIZE,
   DEFAULT_INTERFACE_FONT_SIZE,
@@ -270,8 +272,9 @@ function resolveGenericFamilyLabel(generic: string): string | null {
   // Unnameable Apple faces need -apple-system metrics to distinguish the UI face from SF Mono.
   if (/mac|iphone|ipad|ipod/i.test(navigator.platform)) {
     const systemWidth = measureDomProbeWidth("-apple-system");
-    if (systemWidth !== null && widthsMatch(genericWidth, systemWidth)) return "SF Pro";
-    return monoLike ? "SF Mono" : "SF Pro";
+    if (systemWidth !== null && widthsMatch(genericWidth, systemWidth))
+      return translateMessage(msg("SF Pro"));
+    return monoLike ? translateMessage(msg("SF Mono")) : translateMessage(msg("SF Pro"));
   }
   return null;
 }

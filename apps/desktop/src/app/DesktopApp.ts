@@ -1,3 +1,5 @@
+import { desktopT, setDesktopLanguage } from "../i18n.ts";
+import * as DesktopClientSettings from "../settings/DesktopClientSettings.ts";
 import * as Cause from "effect/Cause";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -145,8 +147,12 @@ const handleFatalStartupError = Effect.fn("desktop.startup.handleFatalStartupErr
   const wasQuitting = yield* Ref.getAndSet(state.quitting, true);
   if (!wasQuitting) {
     yield* electronDialog.showErrorBox(
-      "T3 Code failed to start",
-      `Stage: ${stage}\n${message}${detail}`,
+      desktopT("T3 Code failed to start"),
+      desktopT("Stage: {value0}\n{value1}{value2}", {
+        value0: stage,
+        value1: message,
+        value2: detail,
+      }),
     );
   }
   yield* shutdown.request;
@@ -234,7 +240,7 @@ const bootstrap = Effect.gen(function* () {
       owner: Option.getOrNull(owner),
     });
     yield* (yield* ElectronDialog.ElectronDialog).showErrorBox(
-      "This T3 home is unavailable",
+      desktopT("This T3 home is unavailable"),
       DesktopHomeOwner.homeOwnedMessage(owner),
     );
     return yield* (yield* ElectronApp.ElectronApp).quit;
@@ -370,6 +376,13 @@ const startup = Effect.gen(function* () {
   }
   yield* appIdentity.configure;
   yield* previewPasskeys.configure;
+  const clientSettings = yield* (yield* DesktopClientSettings.DesktopClientSettings).get.pipe(
+    Effect.orElseSucceed(() => Option.none()),
+  );
+  setDesktopLanguage(
+    Option.isSome(clientSettings) ? clientSettings.value.language : "zh",
+    yield* electronApp.preferredSystemLanguages,
+  );
   yield* applicationMenu.configure;
   yield* updates.configure;
   yield* DesktopRemoteUpdates.listen;

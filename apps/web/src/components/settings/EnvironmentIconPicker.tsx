@@ -1,3 +1,4 @@
+import { T } from "gt-react";
 import {
   AuthSettingsWriteScope,
   ENVIRONMENT_MACHINE_KINDS,
@@ -52,7 +53,7 @@ export function EnvironmentIconMenu({
     <MenuSub>
       <MenuSubTrigger>
         <EnvironmentMachineIcon kind={resolved} />
-        Icon
+        <T>Icon</T>
       </MenuSubTrigger>
       <MenuSubPopup>
         {lock !== null ? (

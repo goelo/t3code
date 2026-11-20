@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { type ServerConfig, ServerNpmReleaseError } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -13,12 +15,16 @@ const isServerNpmReleaseError = Schema.is(ServerNpmReleaseError);
 
 function unsupportedLookup(config: ServerConfig | null): ServerNpmReleaseError | null {
   if (config === null) {
-    return new ServerNpmReleaseError({ reason: "Connect to this server to check releases." });
+    return new ServerNpmReleaseError({
+      reason: translateMessage(msg("Connect to this server to check releases.")),
+    });
   }
   return config.environment.capabilities.npmReleaseLookup === true
     ? null
     : new ServerNpmReleaseError({
-        reason: "This server does not support registry lookups. Update it before switching tracks.",
+        reason: translateMessage(
+          msg("This server does not support registry lookups. Update it before switching tracks."),
+        ),
       });
 }
 
@@ -41,7 +47,9 @@ export const npmReleaseAtom = Atom.family((spec: string) =>
       ) ?? candidates[0];
     if (environmentId === undefined) {
       return Effect.fail(
-        new ServerNpmReleaseError({ reason: "Connect to a server to check releases." }),
+        new ServerNpmReleaseError({
+          reason: translateMessage(msg("Connect to a server to check releases.")),
+        }),
       );
     }
     const unsupported = unsupportedLookup(get(serverEnvironment.configValueAtom(environmentId)));

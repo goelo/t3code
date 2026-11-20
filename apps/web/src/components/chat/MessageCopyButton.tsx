@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import { memo, useRef } from "react";
 import { CheckIcon, CopyIcon, type LucideIcon } from "lucide-react";
 import { Button } from "../ui/button";
@@ -11,7 +12,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 export const MessageCopyButton = memo(function MessageCopyButton({
   text,
-  label = "Copy message",
+  label: _labelOverride,
   icon: Icon = CopyIcon,
   extraFlavors,
   size = "xs",
@@ -26,6 +27,9 @@ export const MessageCopyButton = memo(function MessageCopyButton({
   variant?: "outline" | "ghost";
   className?: string;
 }) {
+  const gt = useGT();
+  const label = _labelOverride === undefined ? gt("Copy message") : _labelOverride;
+
   const ref = useRef<HTMLButtonElement>(null);
   const { copyToClipboard, isCopied } = useCopyToClipboard<void>({
     onCopy: () => showAnchoredCopySuccessToast(ref),

@@ -1,3 +1,5 @@
+import { translateMessage } from "./i18n/translateMessage";
+import { msg } from "gt-react";
 import type { FileDiffMetadata, SelectedLineRange, SelectionSide } from "@pierre/diffs";
 import { PullRequestContextMetadata, type PullRequestReviewPosition } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
@@ -439,7 +441,9 @@ function formatDiffReviewRangeLabel(lines: ReadonlyArray<DiffReviewLine>): strin
   const firstNumber = firstLine.newLineNumber ?? firstLine.oldLineNumber;
   const lastNumber = lastLine.newLineNumber ?? lastLine.oldLineNumber;
   if (firstNumber === null || lastNumber === null) {
-    return lines.length === 1 ? "line" : `${lines.length} lines`;
+    return lines.length === 1
+      ? "line"
+      : translateMessage(msg("{value0} lines"), { value0: lines.length });
   }
 
   const firstMarker = getDiffChangeMarker(firstLine.change).trim();
@@ -449,7 +453,12 @@ function formatDiffReviewRangeLabel(lines: ReadonlyArray<DiffReviewLine>): strin
       : "";
   return firstNumber === lastNumber
     ? `${marker}${firstNumber}`
-    : `${marker}${firstNumber} to ${marker}${lastNumber}`;
+    : translateMessage(msg("{value0}{value1} to {value2}{value3}"), {
+        value0: marker,
+        value1: firstNumber,
+        value2: marker,
+        value3: lastNumber,
+      });
 }
 
 export function buildDiffReviewComment(input: {

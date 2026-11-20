@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type {
   AssetCreateUrlResult,
   AssetResource,
@@ -127,7 +129,7 @@ export async function openFileInPreview<AssetError, PreviewError>(input: {
     return AsyncResult.failure(
       Cause.fail(
         new BrowserPreviewUnavailableError({
-          message: "The integrated browser is unavailable in this runtime.",
+          message: translateMessage(msg("The integrated browser is unavailable in this runtime.")),
         }),
       ),
     );

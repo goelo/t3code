@@ -1,3 +1,4 @@
+import { useGT, T } from "gt-react";
 import type { ServerProcessSignal } from "@t3tools/contracts";
 
 import { InlineButton } from "../ui/button";
@@ -10,6 +11,7 @@ export function ProcessSignalActions({
   disabled: boolean;
   onSignal: (signal: ServerProcessSignal) => void;
 }) {
+  const gt = useGT();
   return (
     <div className="flex items-center justify-end gap-1.5">
       <Tooltip>
@@ -17,30 +19,34 @@ export function ProcessSignalActions({
           render={
             <InlineButton
               disabled={disabled}
-              aria-label="Send SIGINT"
+              aria-label={gt("Send SIGINT")}
               tone="muted"
               onClick={() => onSignal("SIGINT")}
             >
-              INT
+              <T>INT</T>
             </InlineButton>
           }
         />
-        <TooltipPopup side="top">Send SIGINT</TooltipPopup>
+        <TooltipPopup side="top">
+          <T>Send SIGINT</T>
+        </TooltipPopup>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger
           render={
             <InlineButton
               disabled={disabled}
-              aria-label="Send SIGKILL"
+              aria-label={gt("Send SIGKILL")}
               tone="destructive"
               onClick={() => onSignal("SIGKILL")}
             >
-              KILL
+              <T>KILL</T>
             </InlineButton>
           }
         />
-        <TooltipPopup side="top">Send SIGKILL</TooltipPopup>
+        <TooltipPopup side="top">
+          <T>Send SIGKILL</T>
+        </TooltipPopup>
       </Tooltip>
     </div>
   );

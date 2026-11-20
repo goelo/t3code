@@ -1,3 +1,4 @@
+import { msg, T, useMessages } from "gt-react";
 import {
   FULL_ACCESS_OVERRIDE_QUESTION,
   fullAccessOverrideExplanation,
@@ -13,17 +14,21 @@ import { TimelineRowCtx } from "./timelineRowContext";
 import { WorkLogRow } from "./WorkLog";
 
 const APPROVAL_PRESENTATION = {
-  command: { icon: "terminal", label: "Command approval", detailLabel: "Command" },
-  "file-change": { icon: "square-pen", label: "File change approval", detailLabel: "File change" },
-  "file-read": { icon: "eye", label: "File read approval", detailLabel: "File to read" },
+  command: { icon: "terminal", label: msg("Command approval"), detailLabel: "Command" },
+  "file-change": {
+    icon: "square-pen",
+    label: msg("File change approval"),
+    detailLabel: "File change",
+  },
+  "file-read": { icon: "eye", label: msg("File read approval"), detailLabel: "File to read" },
   permission: {
     icon: "wrench",
-    label: "App permission approval",
+    label: msg("App permission approval"),
     detailLabel: "Permission request",
   },
   "mcp-elicitation": {
     icon: "hammer",
-    label: "App access approval",
+    label: msg("App access approval"),
     detailLabel: "App access request",
   },
 } satisfies Record<
@@ -36,13 +41,15 @@ export const TimelinePendingApprovalRow = memo(function TimelinePendingApprovalR
 }: {
   approval: PendingApproval;
 }) {
+  const m = useMessages();
+
   const { respondingRequestIds, canOperateThread, onRespondToApproval } = use(TimelineRowCtx);
   const presentation = APPROVAL_PRESENTATION[approval.requestKind];
   const canRespond = approval.responseCapability === "live";
   return (
     <WorkLogRow
       role="group"
-      aria-label={presentation.label}
+      aria-label={m(presentation.label)}
       data-v2-item-type="approval_request"
       wrapLabel
       icon={
@@ -76,7 +83,7 @@ export const TimelinePendingApprovalRow = memo(function TimelinePendingApprovalR
             <>
               <span className="inline-flex items-center gap-1 text-warning">
                 <ShieldIcon aria-hidden className="size-3 shrink-0" />
-                Waiting for approval
+                <T>Waiting for approval</T>
               </span>
               {onRespondToApproval ? (
                 <>
@@ -97,7 +104,7 @@ export const TimelinePendingApprovalRow = memo(function TimelinePendingApprovalR
             </>
           ) : (
             <span className="text-warning">
-              Provider process is gone. Interrupt or restart the run to respond.
+              <T>Provider process is gone. Interrupt or restart the run to respond.</T>
             </span>
           )}
           {approval.fullAccessOverride ? (

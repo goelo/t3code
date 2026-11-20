@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import { isListedThreadLineage, isWebhookDedupeTemplate } from "@t3tools/contracts";
 import {
   EnvironmentId,
@@ -45,13 +47,18 @@ export function scheduleLabel(
   timeZone?: string,
   runAt?: string | null,
 ): string {
-  if (schedule.type === "webhook") return "On webhook";
-  if (schedule.type === "once") return `Once, ${ONCE_FORMATTER.format(new Date(schedule.runAt))}`;
+  if (schedule.type === "webhook") return translateMessage(msg("On webhook"));
+  if (schedule.type === "once")
+    return translateMessage(msg("Once, {value0}"), {
+      value0: ONCE_FORMATTER.format(new Date(schedule.runAt)),
+    });
   if (schedule.type === "interval") {
     const minutes = schedule.everyMs / 60_000;
     return Number.isInteger(minutes)
-      ? `Every ${minutes} min`
-      : `Every ${Math.round(schedule.everyMs / 1000)} sec`;
+      ? translateMessage(msg("Every {value0} min"), { value0: minutes })
+      : translateMessage(msg("Every {value0} sec"), {
+          value0: Math.round(schedule.everyMs / 1000),
+        });
   }
   const weekdays = schedule.weekdays ?? [];
   const days =
@@ -61,7 +68,11 @@ export function scheduleLabel(
         ? "Weekdays"
         : weekdays.map((day) => WEEKDAY_LABELS[day]).join(", ");
   const zone = scheduleTimeZoneLabel(timeZone, runAt);
-  return `${days} at ${schedule.timeOfDay}${zone === undefined ? "" : ` ${zone}`}`;
+  return translateMessage(msg("{value0} at {value1}{value2}"), {
+    value0: days,
+    value1: schedule.timeOfDay,
+    value2: zone === undefined ? "" : ` ${zone}`,
+  });
 }
 
 export function matchesScheduledTaskScope(
@@ -148,11 +159,19 @@ export function scheduleDraftErrors(draft: DraftState) {
   if (draft.scheduleMode === "once") {
     const runAt = new Date(draft.runAt);
     if (Number.isNaN(runAt.getTime()))
-      return [{ title: "Invalid run time", description: "Pick a date and time." }];
+      return [
+        {
+          title: translateMessage(msg("Invalid run time")),
+          description: translateMessage(msg("Pick a date and time.")),
+        },
+      ];
     // A time skipped by a daylight saving change parses to a different clock time.
     if (toDateTimeLocalValue(runAt) !== draft.runAt)
       return [
-        { title: "Invalid run time", description: "That time does not exist in your time zone." },
+        {
+          title: translateMessage(msg("Invalid run time")),
+          description: translateMessage(msg("That time does not exist in your time zone.")),
+        },
       ];
     return [];
   }
@@ -160,8 +179,13 @@ export function scheduleDraftErrors(draft: DraftState) {
   if (parseMaxDeliveryAge(draft.maxDeliveryAgeMinutes) === undefined)
     return [
       {
-        title: "Invalid age limit",
-        description: `Enter whole minutes from 1 to ${MAX_WEBHOOK_DELIVERY_AGE_MINUTES}, or leave it blank.`,
+        title: translateMessage(msg("Invalid age limit")),
+        description: translateMessage(
+          msg("Enter whole minutes from 1 to {value0}, or leave it blank."),
+          {
+            value0: MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
+          },
+        ),
       },
     ];
   const errors: Array<{ title: string; description: string }> = [];
@@ -171,15 +195,17 @@ export function scheduleDraftErrors(draft: DraftState) {
   ] as const) {
     if (value.trim() && !isWebhookDedupeTemplate(value.trim()))
       errors.push({
-        title: "Invalid webhook settings",
-        description: `${label} must contain a valid request placeholder.`,
+        title: translateMessage(msg("Invalid webhook settings")),
+        description: translateMessage(msg("{value0} must contain a valid request placeholder."), {
+          value0: label,
+        }),
       });
   }
   const window = draft.coalesceWindowSeconds.trim();
   if (window && (!Number.isInteger(Number(window)) || Number(window) < 10 || Number(window) > 3600))
     errors.push({
-      title: "Invalid webhook settings",
-      description: "Coalesce window must be whole seconds from 10 to 3600.",
+      title: translateMessage(msg("Invalid webhook settings")),
+      description: translateMessage(msg("Coalesce window must be whole seconds from 10 to 3600.")),
     });
   return errors;
 }
@@ -188,7 +214,10 @@ export function webhookDeliveryLabel(delivery: {
   readonly outcome: string;
   readonly pendingWindow?: boolean | undefined;
 }) {
-  if (delivery.outcome === "accepted") return delivery.pendingWindow ? "Opened window" : "Ran";
+  if (delivery.outcome === "accepted")
+    return delivery.pendingWindow
+      ? translateMessage(msg("Opened window"))
+      : translateMessage(msg("Ran"));
   const labels: Record<string, string> = {
     dispatch_failed: "Run failed",
     duplicate: "Duplicate",

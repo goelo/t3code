@@ -1,3 +1,5 @@
+import { useGT } from "gt-react";
+import { useModelTraitMessages } from "../../i18n/modelTraitMessages";
 import type {
   OrchestrationV2ThreadShell,
   OrchestrationV2TurnItemStatus,
@@ -50,6 +52,18 @@ export function SubagentTooltipContent(props: {
   result?: string | null | undefined;
   progress?: string | null | undefined;
 }) {
+  const gt = useGT();
+  const traitMessage = useModelTraitMessages();
+  const statusLabel = {
+    idle: gt("Idle"),
+    pending: gt("Pending"),
+    running: gt("Running"),
+    waiting: gt("Waiting"),
+    completed: gt("Completed"),
+    failed: gt("Failed"),
+    cancelled: gt("Cancelled"),
+    interrupted: gt("Interrupted"),
+  }[props.status];
   const childSelection =
     props.modelSelection ??
     (props.origin === "app_owned" ? props.childThread?.modelSelection : undefined);
@@ -144,7 +158,7 @@ export function SubagentTooltipContent(props: {
               {speed?.speedIcon && provider ? (
                 <TraitsSpeedIcon provider={provider.driver} speedIcon={speed.speedIcon} size="xs" />
               ) : null}
-              {effort}
+              {effort ? traitMessage(effort) : effort}
             </span>
           ) : null}
         </span>
@@ -163,7 +177,7 @@ export function SubagentTooltipContent(props: {
           )}
         >
           <StatusIcon aria-hidden className="size-3 shrink-0" />
-          {props.status.replaceAll("_", " ")}
+          {statusLabel}
         </span>
         {props.elapsed}
       </div>
@@ -172,7 +186,7 @@ export function SubagentTooltipContent(props: {
         return (
           <div key={label} className="flex min-w-0 items-center gap-2">
             <Icon aria-hidden className="size-3 shrink-0" />
-            <span className="sr-only">{label}</span>
+            <span className="sr-only">{label === "Branch" ? gt("Branch") : gt("Workspace")}</span>
             <MiddleTruncate value={value} className="flex" showTitle={false} />
           </div>
         );

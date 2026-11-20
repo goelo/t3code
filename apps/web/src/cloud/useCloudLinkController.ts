@@ -1,3 +1,6 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { useAtomValue } from "@effect/atom-react";
 import { useAuth } from "@clerk/react";
 import { findErrorTraceId } from "@t3tools/client-runtime/errors";
@@ -77,7 +80,7 @@ export function useCloudLinkController(environmentId: EnvironmentId | null) {
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Could not update T3 Connect",
+        title: translateMessage(msg("Could not update T3 Connect")),
         description: reason ?? relayFailureReason(cause) ?? message,
         ...(traceId
           ? {

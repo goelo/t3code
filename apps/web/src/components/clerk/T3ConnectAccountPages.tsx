@@ -1,3 +1,4 @@
+import { msg } from "gt-react";
 import { useAuth, useClerk } from "@clerk/react";
 import { MessageSquareIcon, ServerIcon, SmartphoneIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -9,7 +10,7 @@ import { T3ConnectUserProfilePage } from "./T3ConnectUserProfilePage";
 
 export const T3_CONNECT_ACCOUNT_PAGES = [
   {
-    label: "Mobile clients",
+    label: msg("Mobile clients"),
     url: "mobile-clients",
     icon: <SmartphoneIcon className="size-4" />,
     content: <MobileClientsUserProfilePage />,
@@ -21,7 +22,7 @@ export const T3_CONNECT_ACCOUNT_PAGES = [
     content: <T3ConnectUserProfilePage />,
   },
   {
-    label: "T3 Chat",
+    label: msg("T3 Chat"),
     url: "t3-chat",
     icon: <MessageSquareIcon className="size-4" />,
     content: <T3ChatUserProfilePage />,

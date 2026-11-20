@@ -2,6 +2,12 @@ import { initializeGTSPA } from "gt-react";
 
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales";
 
+let initialized = false;
+
+export function isI18nInitialized(): boolean {
+  return initialized;
+}
+
 // English is the source text, so it never loads a chunk.
 async function loadTranslations(locale: string): Promise<unknown> {
   if (locale === DEFAULT_LOCALE) return {};
@@ -17,5 +23,7 @@ export function initializeI18n(onLocaleRequest: (locale: string) => void): void 
     locale: DEFAULT_LOCALE,
     loadTranslations,
     _reload: (state) => onLocaleRequest(state.locale),
+  }).then(() => {
+    initialized = true;
   });
 }

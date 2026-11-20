@@ -1,3 +1,6 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { useRef, useSyncExternalStore, use } from "react";
 import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
@@ -15,7 +18,6 @@ import {
 import {
   type ClientSettingsPatch,
   type ClientSettings,
-  DEFAULT_CLIENT_SETTINGS,
   type EnvironmentIdentificationMode,
   type UnifiedSettings,
 } from "@t3tools/contracts/settings";
@@ -62,6 +64,7 @@ import {
 } from "~/state/session";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { DEFAULT_CLIENT_SETTINGS } from "../clientSettingsDefaults";
 
 const CLIENT_SETTINGS_PERSISTENCE_ERROR_SCOPE = "[CLIENT_SETTINGS]";
 
@@ -463,8 +466,8 @@ export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentI
     } catch {
       toastManager.add({
         type: "error",
-        title: "Model preferences not saved",
-        description: "Could not load saved model preferences. Try again.",
+        title: translateMessage(msg("Model preferences not saved")),
+        description: translateMessage(msg("Could not load saved model preferences. Try again.")),
       });
       return;
     }
@@ -490,8 +493,8 @@ export function useToggleEnvironmentModelFavorite(environmentId: EnvironmentId |
       } catch {
         toastManager.add({
           type: "error",
-          title: "Favorites not saved",
-          description: "Could not load saved model preferences. Try again.",
+          title: translateMessage(msg("Favorites not saved")),
+          description: translateMessage(msg("Could not load saved model preferences. Try again.")),
         });
         return;
       }
@@ -571,8 +574,9 @@ export function usePrimarySettings<T = UnifiedSettings>(
   return useMergedSettings(settings, selector);
 }
 
-export const PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE =
-  "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.";
+export const PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE = msg(
+  "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.",
+);
 
 /** Hosted clients have no primary: usePrimarySettings reads defaults and cannot write. */
 export function usePrimarySettingsAvailable(): boolean {
@@ -619,8 +623,14 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       const error = squashAtomCommandFailure(result);
       toastManager.add({
         type: "error",
-        title: "Setting not saved",
-        description: `Could not save on ${label}: ${error instanceof Error ? error.message : "The save failed. Try reconnecting and saving again."}`,
+        title: translateMessage(msg("Setting not saved")),
+        description: translateMessage(msg("Could not save on {value0}: {value1}"), {
+          value0: label,
+          value1:
+            error instanceof Error
+              ? error.message
+              : translateMessage(msg("The save failed. Try reconnecting and saving again.")),
+        }),
       });
     }
     return result;
@@ -641,19 +651,26 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       options?.onFailed?.();
       toastManager.add({
         type: "warning",
-        title: "Setting not saved",
-        description: `This connection lacks permission to change settings on ${environments.find((target) => target.environmentId === environmentId)?.label ?? "the selected environment"}.`,
+        title: translateMessage(msg("Setting not saved")),
+        description: translateMessage(
+          msg("This connection lacks permission to change settings on {value0}."),
+          {
+            value0:
+              environments.find((target) => target.environmentId === environmentId)?.label ??
+              translateMessage(msg("the selected environment")),
+          },
+        ),
       });
     }
     if (Object.keys(serverPatch).length > 0 && canWriteServerPatch) {
       const { sharedPatch, localPatch } = splitSharedServerPatch(serverPatch);
       // Dropping the write silently leaves the control looking saved.
-      const warnUnsaved = (description = PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE) => {
+      const warnUnsaved = (description: string = PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE) => {
         options?.onFailed?.();
         return toastManager.add({
           type: "warning",
-          title: "Setting not saved",
-          description,
+          title: translateMessage(msg("Setting not saved")),
+          description: translateMessage(description),
         });
       };
       if (Object.keys(localPatch).length > 0) {

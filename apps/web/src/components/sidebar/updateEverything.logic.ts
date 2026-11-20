@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
 import {
   type DesktopUpdateChannel,
@@ -147,7 +149,7 @@ export interface ChannelSwitchRelease {
   readonly databaseMigration: number | undefined;
 }
 
-export const channelSwitchLabel = (channel: DesktopUpdateChannel) =>
+const channelSwitchLabel = (channel: DesktopUpdateChannel) =>
   channel === "nightly" ? "Nightly" : "Stable";
 
 /** Stable and Nightly each build their own commits, so either can hold migrations the other lacks.
@@ -460,10 +462,14 @@ export function describeUpdateCapsule(
 ): UpdateCapsuleView {
   if (run.phase === "countdown" && run.restartAt !== null) {
     const seconds = Math.max(0, Math.ceil((run.restartAt - now) / 1000));
-    return { tone: "default", label: `Restart in ${seconds}s`, action: "later" };
+    return {
+      tone: "default",
+      label: translateMessage(msg("Restart in {value0}s"), { value0: seconds }),
+      action: "later",
+    };
   }
   if (run.phase === "installing") {
-    return { tone: "default", label: "Restarting…", action: null };
+    return { tone: "default", label: translateMessage(msg("Restarting…")), action: null };
   }
   const active = machines.filter(({ status }) => isActive(status) && status !== "waiting");
   const slowest = active.toSorted((a, b) => a.machine.startedAt - b.machine.startedAt)[0];
@@ -480,12 +486,21 @@ export function describeUpdateCapsule(
   }
   const done = machines.filter(({ status }) => status === "done").length;
   if (machines.some(({ status }) => isActive(status))) {
-    return { tone: "default", label: `${done} of ${machines.length} updated`, action: null };
+    return {
+      tone: "default",
+      label: translateMessage(msg("{value0} of {value1} updated"), {
+        value0: done,
+        value1: machines.length,
+      }),
+      action: null,
+    };
   }
   if (local?.status === "downloading") {
     return {
       tone: "default",
-      label: `Downloading${local.percent === null ? "" : ` ${Math.floor(local.percent)}%`}`,
+      label: translateMessage(msg("Downloading{value0}"), {
+        value0: local.percent === null ? "" : ` ${Math.floor(local.percent)}%`,
+      }),
       action: null,
     };
   }
@@ -500,16 +515,23 @@ export function describeUpdateCapsule(
           : "dismiss",
     };
   }
-  return { tone: "default", label: `${done} of ${machines.length} updated`, action: null };
+  return {
+    tone: "default",
+    label: translateMessage(msg("{value0} of {value1} updated"), {
+      value0: done,
+      value1: machines.length,
+    }),
+    action: null,
+  };
 }
 
 export const RUN_STATUS_LABELS: Record<UpdateRunMachineStatus, string> = {
-  providers: "updating providers",
-  waiting: "waiting",
-  downloading: "downloading",
-  restarting: "restarting",
-  done: "done",
-  failed: "failed",
+  providers: msg("updating providers"),
+  waiting: msg("waiting"),
+  downloading: msg("downloading"),
+  restarting: msg("restarting"),
+  done: msg("done"),
+  failed: msg("failed"),
 };
 
 export interface UpdateEverythingResult {
@@ -570,7 +592,7 @@ export function getUpdateEverythingToastView(
     if (parts.length === 0) return null;
     return {
       type: "success",
-      title: `Updated ${joinList(parts)}`,
+      title: translateMessage(msg("Updated {value0}"), { value0: joinList(parts) }),
       ...(restarting.length === 0 ? {} : { description: restarting.join("\n") }),
     };
   }

@@ -1,3 +1,4 @@
+import { useGT, msg, useMessages } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import type { PullRequestAction, PullRequestSummary } from "@t3tools/contracts";
 import { createContext, use, type ReactNode } from "react";
@@ -45,6 +46,8 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
   sweeping?: boolean;
   onCloseSweepStart?: (entry: Entry, event: PointerEvent) => void;
 }) {
+  const m = useMessages();
+  const gt = useGT();
   const canWrite = useAtomValue(
     pullRequestEnvironment.runAction.permissionAtom(entry.environmentId),
   );
@@ -84,7 +87,10 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
     <SpeedModeGroup
       busy={busy}
       pending={actionPending || closing}
-      label={`Quick actions for ${terminology.singular} #${entry.number}`}
+      label={gt("Quick actions for {value0} #{value1}", {
+        value0: terminology.singular,
+        value1: entry.number,
+      })}
     >
       {actions.map((action) => {
         const label = ACTIONS[action].label;
@@ -108,14 +114,14 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
               }
             >
               {busy ? <Spinner size="xs" /> : <Icon aria-hidden className="size-3" />}
-              {label}
+              {m(label)}
             </TooltipTrigger>
             <TooltipPopup>
               {action === "merge" && entry.stack
-                ? `Open this ${terminology.singular} to merge its stack`
+                ? gt("Open this {value0} to merge its stack", { value0: terminology.singular })
                 : action === "close" && onCloseSweepStart
-                  ? "Close immediately, or drag across rows to close several"
-                  : `${label} immediately`}
+                  ? gt("Close immediately, or drag across rows to close several")
+                  : gt("{value0} immediately", { value0: label })}
             </TooltipPopup>
           </Tooltip>
         );
@@ -164,8 +170,8 @@ function SpeedModeGroup({
 }
 
 const ACTIONS = {
-  close: { label: "Close", Icon: PullRequestGlyph.closed },
-  merge: { label: "Merge", Icon: PullRequestGlyph.merged },
-  ready: { label: "Ready for review", Icon: PullRequestGlyph.pullRequest },
-  reopen: { label: "Reopen", Icon: PullRequestGlyph.reopen },
+  close: { label: msg("Close"), Icon: PullRequestGlyph.closed },
+  merge: { label: msg("Merge"), Icon: PullRequestGlyph.merged },
+  ready: { label: msg("Ready for review"), Icon: PullRequestGlyph.pullRequest },
+  reopen: { label: msg("Reopen"), Icon: PullRequestGlyph.reopen },
 } as const;

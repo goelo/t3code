@@ -1,3 +1,6 @@
+import { localizeSnoozeLabel } from "../snoozeLabels";
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
 import {
@@ -20,7 +23,9 @@ export function resolveSnoozePresets(
   timestampFormat: TimestampFormat,
   environmentId: EnvironmentId,
 ): ReadonlyArray<SnoozePreset> {
-  return resolveSharedSnoozePresets(now, snoozeOptions(timestampFormat, environmentId));
+  return resolveSharedSnoozePresets(now, snoozeOptions(timestampFormat, environmentId)).map(
+    (preset) => ({ ...preset, label: localizeSnoozeLabel(preset.label) }),
+  );
 }
 
 /** A shown menu choice as picked; see the shared `pickSnoozePreset`. */
@@ -39,11 +44,11 @@ export function pickSnoozePreset(
   if (!picked) {
     toastManager.add({
       type: "warning",
-      title: "Could not snooze thread",
-      description: "That snooze time has passed. Choose another time.",
+      title: translateMessage(msg("Could not snooze thread")),
+      description: translateMessage(msg("That snooze time has passed. Choose another time.")),
     });
   }
-  return picked;
+  return picked ? { ...picked, label: localizeSnoozeLabel(picked.label) } : undefined;
 }
 
 function snoozeOptions(timestampFormat: TimestampFormat, environmentId: EnvironmentId) {

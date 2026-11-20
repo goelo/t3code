@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import * as DateTime from "effect/DateTime";
 
 import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
@@ -64,8 +66,8 @@ export function missingTailscaleEndpointDescription(
   state: Pick<DesktopServerExposureState, "mode" | "tailscaleServeEnabled"> | null,
 ): string {
   return state && state.mode !== "network-accessible" && !state.tailscaleServeEnabled
-    ? "Turn on Network access to detect Tailscale."
-    : "Start Tailscale to set up HTTPS access through MagicDNS.";
+    ? translateMessage(msg("Turn on Network access to detect Tailscale."))
+    : translateMessage(msg("Start Tailscale to set up HTTPS access through MagicDNS."));
 }
 
 export function resolveTailscaleServeBaseUrl(
@@ -97,11 +99,11 @@ export function isWslSettingsRowVisible(input: {
  * including retryable failures. Rechecks retain downloaded-update labels; `state` is null outside desktop.
  */
 export function resolveLocalVersionStatusLabel(state: DesktopUpdateState | null): string {
-  if (!state) return "Up to date";
+  if (!state) return translateMessage(msg("Up to date"));
   if (state.status === "downloading") {
     return state.availableVersion
-      ? `Downloading update ${state.availableVersion}`
-      : "Downloading update";
+      ? translateMessage(msg("Downloading update {value0}"), { value0: state.availableVersion })
+      : translateMessage(msg("Downloading update"));
   }
   const action = resolveDesktopUpdateButtonAction(state);
   if (
@@ -110,14 +112,16 @@ export function resolveLocalVersionStatusLabel(state: DesktopUpdateState | null)
     (state.status === "checking" && state.downloadedVersion !== null)
   ) {
     const version = getDesktopUpdateDownloadedVersion(state);
-    return version ? `Update ${version} downloaded` : "Update downloaded";
+    return version
+      ? translateMessage(msg("Update {value0} downloaded"), { value0: version })
+      : translateMessage(msg("Update downloaded"));
   }
   if (action === "download") {
     return state.availableVersion
-      ? `Update ${state.availableVersion} available`
-      : "Update available";
+      ? translateMessage(msg("Update {value0} available"), { value0: state.availableVersion })
+      : translateMessage(msg("Update available"));
   }
-  return "Up to date";
+  return translateMessage(msg("Up to date"));
 }
 
 export type QrEndpointOption = {
@@ -304,9 +308,13 @@ export function summarizeAuthorizedClients(
   links: ReadonlyArray<ServerPairingLinkRecord>,
 ): string {
   const parts = [
-    `${sessions.length} ${sessions.length === 1 ? "client" : "clients"}`,
+    translateMessage(msg("{count, plural, one {# client} other {# clients}}"), {
+      count: sessions.length,
+    }),
     links.length > 0
-      ? `${links.length} ${links.length === 1 ? "pairing link" : "pairing links"}`
+      ? translateMessage(msg("{count, plural, one {# pairing link} other {# pairing links}}"), {
+          count: links.length,
+        })
       : null,
   ];
   return parts.filter((part): part is string => part !== null).join(" · ");

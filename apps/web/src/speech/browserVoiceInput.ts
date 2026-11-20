@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { cloudSpeechLanguages, effectiveSpeechLanguage } from "@t3tools/shared/speech";
 import {
   requireCloudSpeechKey,
@@ -67,7 +69,9 @@ export function createBrowserVoiceInputPlatform(input: {
         if (isVoiceTranscriptionError(cause)) throw cause;
         throw new VoiceTranscriptionError({
           code: "transcription-failed",
-          message: "Voice transcription failed. Check the destination in Settings → Voice.",
+          message: translateMessage(
+            msg("Voice transcription failed. Check the destination in Settings → Voice."),
+          ),
           cause,
         });
       }
@@ -76,7 +80,7 @@ export function createBrowserVoiceInputPlatform(input: {
       if (input.cloudProvider === "openrouter" && !input.cloudModel)
         throw new VoiceTranscriptionError({
           code: "unavailable",
-          message: "Choose an OpenRouter model in Settings → Voice.",
+          message: translateMessage(msg("Choose an OpenRouter model in Settings → Voice.")),
         });
       await runEnvironmentSpeech(
         requireCloudSpeechKey(input.prepared, input.cloudProvider),

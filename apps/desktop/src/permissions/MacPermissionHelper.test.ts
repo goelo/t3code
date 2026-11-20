@@ -1,3 +1,4 @@
+import { setDesktopLanguage } from "../i18n.ts";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { MacPermissionHelper } from "./MacPermissionHelper.ts";
 import type { SettingsWindow } from "./MacSettingsWindow.ts";
@@ -92,6 +93,7 @@ vi.mock("./MacSettingsWindow.ts", async (importOriginal) => {
 });
 let helper: MacPermissionHelper;
 beforeEach(() => {
+  setDesktopLanguage("en", ["en-US"]);
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.granted = false;
@@ -122,4 +124,15 @@ it("does not reopen a superseded helper when its initial probe completes", async
   await first;
   expect(windows).toHaveLength(1);
   expect(windows[0]!.destroyed).toBe(false);
+});
+
+it("shows Chinese permission instructions and keeps the icon data intact", async () => {
+  setDesktopLanguage("zh", ["en-US"]);
+  await open();
+  const page = decodeURIComponent(mocks.loadURL.mock.calls[0]![0] as string);
+  expect(page).toContain('lang="zh"');
+  expect(page).toContain("将 T3 Code 拖入上方列表");
+  expect(page).toContain("设置辅助功能");
+  expect(page).toContain("data:image/png;base64,abc");
+  expect(page).not.toContain("Drag T3 Code into the list above");
 });

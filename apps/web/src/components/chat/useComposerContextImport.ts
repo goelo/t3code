@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import {
   ConnectionBlockedError,
   ConnectionTransientError,
@@ -161,8 +164,12 @@ export function useComposerContextImport(input: {
     const fail = (reason: string) => {
       toastManager.add({
         type: "error",
-        title: `Couldn't bring ${record.name} into this message`,
-        description: `${reason} Remove the chip or attach the file again.`,
+        title: translateMessage(msg("Couldn't bring {value0} into this message"), {
+          value0: record.name,
+        }),
+        description: translateMessage(msg("{value0} Remove the chip or attach the file again."), {
+          value0: reason,
+        }),
       });
     };
     let file = copiedComposerAttachmentFile(sourceEnvironmentId, record.attachmentId);

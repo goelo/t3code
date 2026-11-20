@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   type DesktopBridge,
   type DesktopPendingSnapShot,
@@ -374,8 +376,8 @@ export function SnapShotCoordinator() {
               "missing-project",
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot taken, but no project is available",
-                description: "Add a project, then capture the window again.",
+                title: translateMessage(msg("Snapshot taken, but no project is available")),
+                description: translateMessage(msg("Add a project, then capture the window again.")),
               }),
             );
             continue;
@@ -398,10 +400,14 @@ export function SnapShotCoordinator() {
               "delivery",
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot failed",
-                description: `Capture ${item.id}: ${
-                  error instanceof Error ? error.message : "Try the capture again."
-                }`,
+                title: translateMessage(msg("Snapshot failed")),
+                description: translateMessage(msg("Capture {value0}: {value1}"), {
+                  value0: item.id,
+                  value1:
+                    error instanceof Error
+                      ? error.message
+                      : translateMessage(msg("Try the capture again.")),
+                }),
               }),
             );
           }
@@ -414,8 +420,11 @@ export function SnapShotCoordinator() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Snapshot failed",
-            description: error instanceof Error ? error.message : "Try the capture again.",
+            title: translateMessage(msg("Snapshot failed")),
+            description:
+              error instanceof Error
+                ? error.message
+                : translateMessage(msg("Try the capture again.")),
           }),
         );
       })
@@ -483,8 +492,8 @@ export function SnapShotCoordinator() {
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot failed",
-                description: state.message ?? "Try the capture again.",
+                title: translateMessage(msg("Snapshot failed")),
+                description: state.message ?? translateMessage(msg("Try the capture again.")),
               }),
             );
           });

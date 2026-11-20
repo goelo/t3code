@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { T, msg } from "gt-react";
 import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
@@ -31,14 +33,17 @@ export function feedbackBannerItem(
               (error: unknown) => {
                 toastManager.add({
                   type: "error",
-                  title: "Could not copy thread ID",
-                  description: error instanceof Error ? error.message : "An error occurred.",
+                  title: translateMessage(msg("Could not copy thread ID")),
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : translateMessage(msg("An error occurred.")),
                 });
               },
             );
           }}
         >
-          Copy ID
+          <T>Copy ID</T>
         </Button>
       ) : undefined,
     ...(submission.status !== "uploading"

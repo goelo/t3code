@@ -1,3 +1,4 @@
+import { setDesktopLanguage } from "../i18n.ts";
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import type { DesktopUpdateState } from "@t3tools/contracts";
@@ -47,6 +48,7 @@ export interface UpdatesHarnessOptions {
 }
 
 export function makeHarness(options: UpdatesHarnessOptions = {}) {
+  setDesktopLanguage("en", ["en-US"]);
   let checkCount = 0;
   let quitAndInstallCount = 0;
   let downloadCount = 0;

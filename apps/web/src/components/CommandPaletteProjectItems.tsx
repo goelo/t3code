@@ -1,3 +1,4 @@
+import { msg, T } from "gt-react";
 import type { EnvironmentId, EnvironmentMachineKind } from "@t3tools/contracts";
 
 import type { SidebarProjectSnapshot } from "../sidebarProjectGrouping";
@@ -21,7 +22,7 @@ export interface CommandPaletteProjectLocation {
 
 const UNKNOWN_PROJECT_LOCATION: CommandPaletteProjectLocation = {
   kind: "remote",
-  label: "Remote",
+  label: msg("Remote"),
   machine: "server",
 };
 
@@ -110,7 +111,9 @@ function ProjectLocationDescription(props: {
     <span className="flex min-w-0 items-center gap-1">
       {props.current ? (
         <>
-          <span className="shrink-0">Current</span>
+          <span className="shrink-0">
+            <T>Current</T>
+          </span>
           <CommandPaletteMetaDot />
         </>
       ) : null}

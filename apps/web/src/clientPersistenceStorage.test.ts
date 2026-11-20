@@ -38,6 +38,25 @@ afterEach(() => {
 });
 
 describe("clientPersistenceStorage", () => {
+  it.each([undefined, "en", "zh", "system"] as const)(
+    "defaults a legacy browser preference to Chinese but preserves explicit language %s",
+    async (language) => {
+      const testWindow = getTestWindow();
+      const raw = JSON.stringify({
+        ...(language === undefined ? {} : { language }),
+        timestampFormat: "12-hour",
+      });
+      testWindow.localStorage.setItem("t3code:client-settings:v1", raw);
+      const write = vi.spyOn(testWindow.localStorage, "setItem");
+      const { readBrowserClientSettings } = await import("./clientPersistenceStorage");
+      const settings = readBrowserClientSettings();
+      expect(settings?.language).toBe(language ?? "zh");
+      expect(settings?.timestampFormat).toBe("12-hour");
+      expect(write).not.toHaveBeenCalled();
+      expect(testWindow.localStorage.getItem("t3code:client-settings:v1")).toBe(raw);
+    },
+  );
+
   it.each(["not-json", '{"wordWrap":"invalid"}'])(
     "does not treat invalid saved settings as absent: %s",
     async (value) => {

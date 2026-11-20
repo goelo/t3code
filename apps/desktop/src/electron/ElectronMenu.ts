@@ -7,6 +7,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 import * as Electron from "electron";
+import { localizeMenuRoles } from "../i18n.ts";
 
 export interface ElectronMenuPosition {
   readonly x: number;
@@ -193,7 +194,9 @@ export const make = Effect.gen(function* () {
     setApplicationMenu: Effect.fn("ElectronMenu.setApplicationMenu")(function (template) {
       return Effect.try({
         try: () => {
-          Electron.Menu.setApplicationMenu(Electron.Menu.buildFromTemplate([...template]));
+          Electron.Menu.setApplicationMenu(
+            Electron.Menu.buildFromTemplate(localizeMenuRoles(template)),
+          );
         },
         catch: (cause) =>
           new ElectronMenuOperationError({
@@ -210,7 +213,7 @@ export const make = Effect.gen(function* () {
         ? Effect.void
         : Effect.try({
             try: () =>
-              Electron.Menu.buildFromTemplate([...input.template]).popup({
+              Electron.Menu.buildFromTemplate(localizeMenuRoles(input.template)).popup({
                 window: input.window,
                 ...(input.frame ? { frame: input.frame } : {}),
               }),

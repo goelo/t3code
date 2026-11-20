@@ -1,3 +1,4 @@
+import { desktopT } from "../i18n.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import type { Certificate, Session, WebContents } from "electron";
 import { BrowserWindow, session } from "electron";
@@ -323,9 +324,13 @@ export const make = Effect.gen(function* BrowserSessionMake() {
     promptPermission(
       requester,
       {
-        buttons: ["Open", "Cancel"],
-        message: `Open this ${new URL(url).protocol.slice(0, -1)} link?`,
-        detail: `A page in the browser wants to open another application:\n\n${truncateForPrompt(url)}`,
+        buttons: [desktopT("Open"), desktopT("Cancel")],
+        message: desktopT("Open this {value0} link?", {
+          value0: new URL(url).protocol.slice(0, -1),
+        }),
+        detail: desktopT("A page in the browser wants to open another application:\n\n{value0}", {
+          value0: truncateForPrompt(url),
+        }),
       },
       (answer) => callback(answer === true),
     );
@@ -454,20 +459,29 @@ export const make = Effect.gen(function* BrowserSessionMake() {
         .showMessageBox(
           {
             type: "warning",
-            buttons: ["Trust and Remember", "Cancel"],
+            buttons: [desktopT("Trust and Remember"), desktopT("Cancel")],
             defaultId: 1,
             cancelId: 1,
             signal: dismiss.signal,
-            message: `${host} has an untrusted certificate`,
+            message: desktopT("{value0} has an untrusted certificate", { value0: host }),
             detail: [
               reason,
               "",
-              `Issued to: ${promptCertificateName(certificate.subjectName)}`,
-              `Issued by: ${promptCertificateName(certificate.issuerName)}`,
-              `Valid: ${promptCertificateDate(certificate.validStart)} – ${promptCertificateDate(certificate.validExpiry)}`,
-              `Fingerprint: ${approval.fingerprint}`,
+              desktopT("Issued to: {value0}", {
+                value0: promptCertificateName(certificate.subjectName),
+              }),
+              desktopT("Issued by: {value0}", {
+                value0: promptCertificateName(certificate.issuerName),
+              }),
+              desktopT("Valid: {value0} – {value1}", {
+                value0: promptCertificateDate(certificate.validStart),
+                value1: promptCertificateDate(certificate.validExpiry),
+              }),
+              desktopT("Fingerprint: {value0}", { value0: approval.fingerprint }),
               "",
-              "Trust it only if you know this certificate belongs to the site. Clearing this browser profile's cookies forgets it.",
+              desktopT(
+                "Trust it only if you know this certificate belongs to the site. Clearing this browser profile's cookies forgets it.",
+              ),
             ].join("\n"),
           },
           // In the reporter's Windows test, a box owned by the host window
@@ -482,8 +496,12 @@ export const make = Effect.gen(function* BrowserSessionMake() {
                     Effect.logWarning("Failed to save a certificate approval.", { cause }).pipe(
                       Effect.andThen(
                         electronDialog.showErrorBox(
-                          `Could not trust the certificate for ${host}`,
-                          "T3 Code could not save this approval, so the page stays blocked. Check that the disk is not full and its data folder is writable, then try again.",
+                          desktopT("Could not trust the certificate for {value0}", {
+                            value0: host,
+                          }),
+                          desktopT(
+                            "T3 Code could not save this approval, so the page stays blocked. Check that the disk is not full and its data folder is writable, then try again.",
+                          ),
                         ),
                       ),
                       Effect.as(false),
@@ -605,8 +623,10 @@ export const make = Effect.gen(function* BrowserSessionMake() {
             promptPermission(
               requester,
               {
-                buttons: ["Allow", "Block"],
-                message: `${truncateForPrompt(origin)} wants to see text and images copied to the clipboard`,
+                buttons: [desktopT("Allow"), desktopT("Block")],
+                message: desktopT("{value0} wants to see text and images copied to the clipboard", {
+                  value0: truncateForPrompt(origin),
+                }),
               },
               (answer) => {
                 if (answer !== undefined) clipboardReadDecisions.set(origin, answer);

@@ -1,3 +1,5 @@
+import { translateMessage } from "../../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { AnyRouter } from "@tanstack/react-router";
 import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
@@ -89,7 +91,10 @@ function watchGuideRun(
     const looking = document.visibilityState === "visible" && document.hasFocus();
     if (looking && isGuideShown(runKey)) return;
 
-    const title = failure === null ? "Review guide ready" : "Review guide failed";
+    const title =
+      failure === null
+        ? translateMessage(msg("Review guide ready"))
+        : translateMessage(msg("Review guide failed"));
     const body =
       watch.title ??
       observedPullRequestTitle(registry, watch.environmentId, watch.reference) ??

@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
@@ -29,25 +31,49 @@ type UndoNotice = {
 export const useThreadUndoNotice = create<{ notice: UndoNotice | null }>(() => ({ notice: null }));
 
 const UNDONE_ACTION = {
-  Settled: "settle",
-  Snoozed: "snooze",
-  Unpinned: "unpin",
-  Archived: "archive",
-  Discarded: "discard",
+  Settled: msg("settle"),
+  Snoozed: msg("snooze"),
+  Unpinned: msg("unpin"),
+  Archived: msg("archive"),
+  Discarded: msg("discard"),
 } satisfies Record<UndoOptions["action"], string>;
 
+const ACTION_LABELS = {
+  Settled: msg("Settled"),
+  Snoozed: msg("Snoozed"),
+  Unpinned: msg("Unpinned"),
+  Archived: msg("Archived"),
+  Discarded: msg("Discarded"),
+};
+
+export function threadUndoActionLabel(action: UndoOptions["action"]): string {
+  return translateMessage(ACTION_LABELS[action]);
+}
+
 function countLabel(action: UndoOptions["action"], count: number) {
-  const noun = action === "Discarded" ? "draft" : "thread";
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+  const message =
+    action === "Discarded"
+      ? count === 1
+        ? msg("{value0} draft")
+        : msg("{value0} drafts")
+      : count === 1
+        ? msg("{value0} thread")
+        : msg("{value0} threads");
+  return translateMessage(message, { value0: count });
 }
 
 function threadUndoNoticeSummary(notice: Pick<UndoNotice, "action" | "count">): string {
-  return `${notice.action} ${countLabel(notice.action, notice.count)}`;
+  return translateMessage(msg("{action} {countLabel}"), {
+    action: threadUndoActionLabel(notice.action),
+    countLabel: countLabel(notice.action, notice.count),
+  });
 }
 
 export function threadUndoLabel(keybindings: Parameters<typeof shortcutLabelForCommand>[0]) {
   const shortcut = shortcutLabelForCommand(keybindings, "thread.undo");
-  return shortcut ? `${shortcut} to undo` : "Undo";
+  return shortcut
+    ? translateMessage(msg("{value0} to undo"), { value0: shortcut })
+    : translateMessage(msg("Undo"));
 }
 
 let announcedSummary: string | null = null;
@@ -106,8 +132,11 @@ function refreshNotice() {
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: failureTitle,
-                description: error instanceof Error ? error.message : "An error occurred.",
+                title: translateMessage(failureTitle),
+                description:
+                  error instanceof Error
+                    ? error.message
+                    : translateMessage(msg("An error occurred.")),
               }),
             );
           };
@@ -124,7 +153,12 @@ function refreshNotice() {
       );
       // Failures already raise a toast, so only what was actually restored is spoken.
       if (undone > 0) {
-        announce(`Undid ${UNDONE_ACTION[latest.action]} of ${countLabel(latest.action, undone)}`);
+        announce(
+          translateMessage(msg("Undid {action} of {countLabel}"), {
+            action: translateMessage(UNDONE_ACTION[latest.action]),
+            countLabel: countLabel(latest.action, undone),
+          }),
+        );
       }
     },
   });

@@ -1,6 +1,13 @@
 import { ClientSettingsSchema, type ClientSettings } from "@t3tools/contracts";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 
 import { getLocalStorageItem, setLocalStorageItem } from "./hooks/useLocalStorage";
+
+const BrowserClientSettingsSchema = Schema.Struct({
+  ...ClientSettingsSchema.fields,
+  language: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed("zh"))),
+});
 
 const CLIENT_SETTINGS_STORAGE_KEY = "t3code:client-settings:v1";
 
@@ -13,7 +20,7 @@ export function readBrowserClientSettings(): ClientSettings | null {
     return null;
   }
 
-  return getLocalStorageItem(CLIENT_SETTINGS_STORAGE_KEY, ClientSettingsSchema);
+  return getLocalStorageItem(CLIENT_SETTINGS_STORAGE_KEY, BrowserClientSettingsSchema);
 }
 
 export function writeBrowserClientSettings(settings: ClientSettings): void {

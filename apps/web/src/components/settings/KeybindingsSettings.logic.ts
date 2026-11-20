@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   STATIC_KEYBINDING_COMMANDS,
   type KeybindingCommand,
@@ -104,11 +106,11 @@ export function whenAstToExpression(node: KeybindingWhenNode | undefined): strin
 }
 
 export function whenNodeRemoveLabel(node: KeybindingWhenNode, depth: number): string {
-  if (depth === 0) return "Clear all conditions";
+  if (depth === 0) return translateMessage(msg("Clear all conditions"));
   if (node.type === "identifier" || (node.type === "not" && node.node.type === "identifier")) {
-    return "Remove condition";
+    return translateMessage(msg("Remove condition"));
   }
-  return "Remove group and its conditions";
+  return translateMessage(msg("Remove group and its conditions"));
 }
 
 function wrapWhenExpression(node: KeybindingWhenNode): string {
@@ -126,7 +128,7 @@ export function parseWhenExpressionDraft(
   if (!ast) {
     return {
       ok: false,
-      message: "Use variables with !, &&, ||, and parentheses.",
+      message: translateMessage(msg("Use variables with !, &&, ||, and parentheses.")),
     };
   }
 
@@ -211,17 +213,17 @@ export interface KeybindingGroup {
 const KEYBINDING_GROUPS = [
   {
     id: "navigation",
-    title: "Navigation",
+    title: msg("Navigation"),
     prefixes: ["sidebar", "rightPanel", "commandPalette", "filePicker", "projectSearch", "editor"],
   },
-  { id: "threads", title: "Threads", prefixes: ["thread", "chat", "pullRequest"] },
-  { id: "composer", title: "Composer", prefixes: ["composer", "modelPicker"] },
-  { id: "terminal", title: "Terminal", prefixes: ["terminal"] },
-  { id: "preview", title: "Preview & diff", prefixes: ["preview", "diff"] },
-  { id: "appearance", title: "Appearance", prefixes: ["theme", "appearance", "themeEditor"] },
-  { id: "scripts", title: "Project scripts", prefixes: ["script"] },
+  { id: "threads", title: msg("Threads"), prefixes: ["thread", "chat", "pullRequest"] },
+  { id: "composer", title: msg("Composer"), prefixes: ["composer", "modelPicker"] },
+  { id: "terminal", title: msg("Terminal"), prefixes: ["terminal"] },
+  { id: "preview", title: msg("Preview & diff"), prefixes: ["preview", "diff"] },
+  { id: "appearance", title: msg("Appearance"), prefixes: ["theme", "appearance", "themeEditor"] },
+  { id: "scripts", title: msg("Project scripts"), prefixes: ["script"] },
 ] as const;
-const OTHER_KEYBINDING_GROUP = { id: "other", title: "Other" } as const;
+const OTHER_KEYBINDING_GROUP = { id: "other", title: msg("Other") } as const;
 
 function keybindingGroupFor(command: KeybindingCommand): { id: string; title: string } {
   const prefix = String(command).split(".")[0] ?? "";
@@ -369,25 +371,192 @@ export function buildKeybindingCommandOptions(
 }
 
 export function commandLabel(command: KeybindingCommand): string {
-  if (command === "workspace.focusNext") return "Focus Next Workspace Area";
-  if (command === "workspace.focusPrevious") return "Focus Previous Workspace Area";
-  if (command === "composer.sendAlternate") return "Composer: Opposite Queue or Steer Action";
-  if (command === "composer.sendBackground") return "Composer: Start in Background";
-  if (command === "composer.sendAndNewThread") return "Composer: Send and Start New Thread";
-  if (command === "composer.dictation") return "Composer: Start or Finish Dictation";
-  if (command === "thread.steerQueuedMessage") return "Queue: Send First Queued Message";
-  if (command === "thread.editQueuedMessage") return "Queue: Edit Last Queued Message";
-  if (command === "thread.copyReference") return "Pull Request: Copy Link or Thread";
+  if (command === "workspace.focusNext") return translateMessage(msg("Focus Next Workspace Area"));
+  if (command === "workspace.focusPrevious")
+    return translateMessage(msg("Focus Previous Workspace Area"));
+  if (command === "composer.sendAlternate")
+    return translateMessage(msg("Composer: Opposite Queue or Steer Action"));
+  if (command === "composer.sendBackground")
+    return translateMessage(msg("Composer: Start in Background"));
+  if (command === "composer.sendAndNewThread")
+    return translateMessage(msg("Composer: Send and Start New Thread"));
+  if (command === "composer.dictation")
+    return translateMessage(msg("Composer: Start or Finish Dictation"));
+  if (command === "thread.steerQueuedMessage")
+    return translateMessage(msg("Queue: Send First Queued Message"));
+  if (command === "thread.editQueuedMessage")
+    return translateMessage(msg("Queue: Edit Last Queued Message"));
+  if (command === "thread.copyReference")
+    return translateMessage(msg("Pull Request: Copy Link or Thread"));
   const usageMetric = METRIC_OPTIONS.find((option) => option.command === command);
-  if (usageMetric) return `Usage: ${usageMetric.label}`;
+  if (usageMetric) return translateMessage(msg("Usage: {value0}"), { value0: usageMetric.label });
   const usagePeriod = WINDOW_OPTIONS.find((option) => option.command === command);
-  if (usagePeriod) return `Usage: Period: ${usagePeriod.label}`;
-  if (command === "view.reopenClosed") return "Reopen Closed Tab";
-  if (command === "preview.focusUrl") return "Preview: Focus URL";
-  if (command === "preview.find") return "Preview: Find on Page";
+  if (usagePeriod)
+    return translateMessage(msg("Usage: Period: {value0}"), { value0: usagePeriod.label });
+  if (command === "view.reopenClosed") return translateMessage(msg("Reopen Closed Tab"));
+  if (command === "preview.focusUrl") return translateMessage(msg("Preview: Focus URL"));
+  if (command === "preview.find") return translateMessage(msg("Preview: Find on Page"));
   const raw = String(command);
   if (raw.startsWith("script.") && raw.endsWith(".run")) {
-    return `Run Script: ${titleCaseCommandSegment(raw.slice("script.".length, -".run".length))}`;
+    return translateMessage(msg("Run Script: {value0}"), {
+      value0: titleCaseCommandSegment(raw.slice("script.".length, -".run".length)),
+    });
+  }
+  switch (command) {
+    case "sidebar.toggle":
+      return translateMessage(msg("Sidebar: Toggle"));
+    case "navigation.back":
+      return translateMessage(msg("Navigation: Back"));
+    case "navigation.forward":
+      return translateMessage(msg("Navigation: Forward"));
+    case "terminal.toggle":
+      return translateMessage(msg("Terminal: Toggle"));
+    case "terminal.split":
+      return translateMessage(msg("Terminal: Split"));
+    case "terminal.splitVertical":
+      return translateMessage(msg("Terminal: Split Vertical"));
+    case "terminal.new":
+      return translateMessage(msg("Terminal: New"));
+    case "terminal.close":
+      return translateMessage(msg("Terminal: Close"));
+    case "rightPanel.toggle":
+      return translateMessage(msg("Right Panel: Toggle"));
+    case "rightPanel.new":
+      return translateMessage(msg("Right Panel: New"));
+    case "threadPanel.toggle":
+      return translateMessage(msg("Thread Panel: Toggle"));
+    case "rightPanel.toggleMaximized":
+      return translateMessage(msg("Right Panel: Toggle Maximized"));
+    case "rightPanel.close":
+      return translateMessage(msg("Right Panel: Close"));
+    case "pullRequest.copyNumber":
+      return translateMessage(msg("Pull Request: Copy Number"));
+    case "diff.toggle":
+      return translateMessage(msg("Diff: Toggle"));
+    case "preview.toggle":
+      return translateMessage(msg("Preview: Toggle"));
+    case "preview.refresh":
+      return translateMessage(msg("Preview: Refresh"));
+    case "preview.zoomIn":
+      return translateMessage(msg("Preview: Zoom In"));
+    case "preview.zoomOut":
+      return translateMessage(msg("Preview: Zoom Out"));
+    case "preview.resetZoom":
+      return translateMessage(msg("Preview: Reset Zoom"));
+    case "commandPalette.toggle":
+      return translateMessage(msg("Command Palette: Toggle"));
+    case "filePicker.toggle":
+      return translateMessage(msg("File Picker: Toggle"));
+    case "projectSearch.toggle":
+      return translateMessage(msg("Project Search: Toggle"));
+    case "usage.open":
+      return translateMessage(msg("Usage: Open"));
+    case "theme.select":
+      return translateMessage(msg("Theme: Select"));
+    case "appearance.cycle":
+      return translateMessage(msg("Appearance: Cycle"));
+    case "themeEditor.toggle":
+      return translateMessage(msg("Theme Editor: Toggle"));
+    case "composer.stash":
+      return translateMessage(msg("Composer: Stash"));
+    case "composer.host":
+      return translateMessage(msg("Composer: Host"));
+    case "composer.cycleHost":
+      return translateMessage(msg("Composer: Cycle Host"));
+    case "composer.effort":
+      return translateMessage(msg("Composer: Effort"));
+    case "composer.increaseEffort":
+      return translateMessage(msg("Composer: Increase Effort"));
+    case "composer.decreaseEffort":
+      return translateMessage(msg("Composer: Decrease Effort"));
+    case "composer.mode":
+      return translateMessage(msg("Composer: Mode"));
+    case "composer.workspace":
+      return translateMessage(msg("Composer: Workspace"));
+    case "composer.previousWorktree":
+      return translateMessage(msg("Composer: Previous Worktree"));
+    case "composer.branch":
+      return translateMessage(msg("Composer: Branch"));
+    case "chat.new":
+      return translateMessage(msg("Chat: New"));
+    case "chat.newLocal":
+      return translateMessage(msg("Chat: New Local"));
+    case "chat.newWithoutProject":
+      return translateMessage(msg("Chat: New Without Project"));
+    case "chat.find":
+      return translateMessage(msg("Chat: Find"));
+    case "editor.openFavorite":
+      return translateMessage(msg("Editor: Open Favorite"));
+    case "usage.cost":
+      return translateMessage(msg("Usage: Cost"));
+    case "usage.tokens":
+      return translateMessage(msg("Usage: Tokens"));
+    case "usage.limits":
+      return translateMessage(msg("Usage: Limits"));
+    case "usage.period.day":
+      return translateMessage(msg("Usage: Period: Day"));
+    case "usage.period.week":
+      return translateMessage(msg("Usage: Period: Week"));
+    case "usage.period.month":
+      return translateMessage(msg("Usage: Period: Month"));
+    case "usage.period.quarter":
+      return translateMessage(msg("Usage: Period: Quarter"));
+    case "modelPicker.toggle":
+      return translateMessage(msg("Model Picker: Toggle"));
+    case "modelPicker.previousProvider":
+      return translateMessage(msg("Model Picker: Previous Provider"));
+    case "modelPicker.nextProvider":
+      return translateMessage(msg("Model Picker: Next Provider"));
+    case "modelPicker.jump.1":
+      return translateMessage(msg("Model Picker: Jump: 1"));
+    case "modelPicker.jump.2":
+      return translateMessage(msg("Model Picker: Jump: 2"));
+    case "modelPicker.jump.3":
+      return translateMessage(msg("Model Picker: Jump: 3"));
+    case "modelPicker.jump.4":
+      return translateMessage(msg("Model Picker: Jump: 4"));
+    case "modelPicker.jump.5":
+      return translateMessage(msg("Model Picker: Jump: 5"));
+    case "modelPicker.jump.6":
+      return translateMessage(msg("Model Picker: Jump: 6"));
+    case "modelPicker.jump.7":
+      return translateMessage(msg("Model Picker: Jump: 7"));
+    case "modelPicker.jump.8":
+      return translateMessage(msg("Model Picker: Jump: 8"));
+    case "modelPicker.jump.9":
+      return translateMessage(msg("Model Picker: Jump: 9"));
+    case "thread.stop":
+      return translateMessage(msg("Thread: Stop"));
+    case "thread.previous":
+      return translateMessage(msg("Thread: Previous"));
+    case "thread.next":
+      return translateMessage(msg("Thread: Next"));
+    case "thread.settle":
+      return translateMessage(msg("Thread: Settle"));
+    case "thread.pin":
+      return translateMessage(msg("Thread: Pin"));
+    case "thread.regenerateTitle":
+      return translateMessage(msg("Thread: Regenerate Title"));
+    case "thread.undo":
+      return translateMessage(msg("Thread: Undo"));
+    case "thread.jump.1":
+      return translateMessage(msg("Thread: Jump: 1"));
+    case "thread.jump.2":
+      return translateMessage(msg("Thread: Jump: 2"));
+    case "thread.jump.3":
+      return translateMessage(msg("Thread: Jump: 3"));
+    case "thread.jump.4":
+      return translateMessage(msg("Thread: Jump: 4"));
+    case "thread.jump.5":
+      return translateMessage(msg("Thread: Jump: 5"));
+    case "thread.jump.6":
+      return translateMessage(msg("Thread: Jump: 6"));
+    case "thread.jump.7":
+      return translateMessage(msg("Thread: Jump: 7"));
+    case "thread.jump.8":
+      return translateMessage(msg("Thread: Jump: 8"));
+    case "thread.jump.9":
+      return translateMessage(msg("Thread: Jump: 9"));
   }
   return raw.split(".").map(titleCaseCommandSegment).join(": ");
 }

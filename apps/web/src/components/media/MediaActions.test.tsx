@@ -1,3 +1,8 @@
+vi.mock("gt-react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("gt-react")>();
+  return { ...actual, useGT: () => actual.gtFallback, useMessages: () => actual.mFallback };
+});
+
 import {
   AuthFilesystemReadScope,
   EnvironmentId,

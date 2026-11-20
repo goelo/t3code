@@ -1,0 +1,10 @@
+import {
+  DEFAULT_CLIENT_SETTINGS as SHARED_CLIENT_SETTINGS,
+  DEFAULT_UNIFIED_SETTINGS as SHARED_UNIFIED_SETTINGS,
+} from "@t3tools/contracts/settings";
+
+export const DEFAULT_CLIENT_SETTINGS = { ...SHARED_CLIENT_SETTINGS, language: "zh" };
+export const DEFAULT_UNIFIED_SETTINGS = {
+  ...SHARED_UNIFIED_SETTINGS,
+  language: DEFAULT_CLIENT_SETTINGS.language,
+};

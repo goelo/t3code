@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import type { ProviderDriverKind, ProviderOptionDescriptor } from "@t3tools/contracts";
 import { getProviderOptionCurrentValue } from "@t3tools/shared/model";
 import { ZapIcon } from "lucide-react";
@@ -47,6 +48,7 @@ export function TraitsSpeedIcon({
   speedIcon: "fast" | "ultrafast";
   size?: ComposerControlSize;
 }) {
+  const gt = useGT();
   return (
     <>
       <ComposerControlIcon
@@ -62,7 +64,7 @@ export function TraitsSpeedIcon({
         )}
       />
       <span className="sr-only">
-        {speedIcon === "ultrafast" ? "Ultrafast mode on" : "Fast mode on"}
+        {speedIcon === "ultrafast" ? gt("Ultrafast mode on") : gt("Fast mode on")}
       </span>
     </>
   );

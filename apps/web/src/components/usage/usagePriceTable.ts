@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   parseUsagePriceForm,
   usagePriceForm,
@@ -37,10 +39,11 @@ function modelAlias(target: UsagePriceTarget, model: string) {
 
 export function usageAliasCell(targets: readonly UsagePriceTarget[], model: string) {
   if (targets.some((target) => target.aliases === null))
-    return { value: "", placeholder: "Unavailable" };
+    return { value: "", placeholder: translateMessage(msg("Unavailable")) };
   const values = targets.map((target) => modelAlias(target, model) ?? "");
-  if (values.some((value) => value !== values[0])) return { value: "", placeholder: "Mixed" };
-  return { value: values[0] ?? "", placeholder: "None" };
+  if (values.some((value) => value !== values[0]))
+    return { value: "", placeholder: translateMessage(msg("Mixed")) };
+  return { value: values[0] ?? "", placeholder: translateMessage(msg("None")) };
 }
 
 export function usagePriceCell(
@@ -53,8 +56,9 @@ export function usagePriceCell(
     modelPrice(target, model) ? usagePriceForm(model, modelPrice(target, model))[field] : null,
   );
   if (targets.some((target) => target.prices === null))
-    return { value: "", placeholder: "Unavailable" };
-  if (values.some((value) => value !== values[0])) return { value: "", placeholder: "Mixed" };
+    return { value: "", placeholder: translateMessage(msg("Unavailable")) };
+  if (values.some((value) => value !== values[0]))
+    return { value: "", placeholder: translateMessage(msg("Mixed")) };
   return {
     value: values[0] ?? "",
     placeholder: values[0] === null ? "Automatic" : optional ? "Input rate" : "0.00",

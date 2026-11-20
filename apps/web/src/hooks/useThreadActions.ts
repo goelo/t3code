@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   parseScopedThreadKey,
   scopeProjectRef,
@@ -193,7 +195,7 @@ export async function navigateAfterThreadDeletion(navigate: () => Promise<void>)
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Thread deleted, but navigation failed",
+        title: translateMessage(msg("Thread deleted, but navigation failed")),
         description: error instanceof Error ? error.message : "An error occurred.",
       }),
     );
@@ -267,7 +269,7 @@ function threadOperationFailure(target: ScopedThreadRef) {
     : AsyncResult.failure(
         Cause.fail(
           new EnvironmentAuthorizationError({
-            message: "This connection cannot change threads.",
+            message: translateMessage(msg("This connection cannot change threads.")),
             requiredScope: AuthOrchestrationOperateScope,
           }),
         ),
@@ -421,7 +423,7 @@ export function useThreadActions() {
       action: "Archived",
       claim: action,
       undo: () => unarchiveThread(threadRef, { navigate: shouldNavigateToDraft }),
-      failureTitle: "Failed to undo archive",
+      failureTitle: msg("Failed to undo archive"),
     });
 
     if (shouldNavigateToDraft && router.state.location.href === requestingRouteHref) {
@@ -648,7 +650,7 @@ export function useThreadActions() {
       : AsyncResult.failure(
           Cause.fail(
             new EnvironmentAuthorizationError({
-              message: "This connection can no longer remove worktrees.",
+              message: translateMessage(msg("This connection can no longer remove worktrees.")),
               requiredScope: AuthSourceControlWriteScope,
             }),
           ),
@@ -782,7 +784,7 @@ export function useThreadActions() {
         action: "Unpinned",
         claim: action,
         undo: () => runUndoPlan(target, undoPlan),
-        failureTitle: "Failed to undo unpin",
+        failureTitle: msg("Failed to undo unpin"),
       });
     } else {
       action.finish();
@@ -826,7 +828,7 @@ export function useThreadActions() {
       action: "Settled",
       claim: action,
       undo: () => runUndoPlan(target, undoPlan),
-      failureTitle: "Failed to undo settle",
+      failureTitle: msg("Failed to undo settle"),
     });
     return result;
   };
@@ -939,7 +941,7 @@ export function useThreadActions() {
       action: "Snoozed",
       claim: action,
       undo: () => runUndoPlan(target, ThreadUndo.planThreadUndo("snooze")),
-      failureTitle: "Failed to wake thread",
+      failureTitle: msg("Failed to wake thread"),
     });
     return result;
   };

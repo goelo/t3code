@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   CLOUD_SPEECH_LABELS,
   CloudSpeechProvider,
@@ -110,7 +112,14 @@ export function secretProviderUses(
     ...CloudSpeechProvider.literals.flatMap((provider) => {
       const credential = settings.cloudSpeechCredentials[provider];
       return isSecretReference(credential) && credential.provider === providerId
-        ? [{ id: `voice:${provider}`, label: `Voice · ${CLOUD_SPEECH_LABELS[provider]}` }]
+        ? [
+            {
+              id: `voice:${provider}`,
+              label: translateMessage(msg("Voice · {value0}"), {
+                value0: CLOUD_SPEECH_LABELS[provider],
+              }),
+            },
+          ]
         : [];
     }),
   ];

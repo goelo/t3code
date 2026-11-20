@@ -1,3 +1,6 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { useAtomValue } from "@effect/atom-react";
 import type {
   AtomCommandFailure,
@@ -99,7 +102,7 @@ function useAction<
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthSourceControlWriteScope,
-            message: "This connection cannot change source control.",
+            message: translateMessage(msg("This connection cannot change source control.")),
           }),
         ),
       );
@@ -337,7 +340,7 @@ export function usePreparePullRequestThreadAction(scope: SourceControlActionScop
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthOrchestrationOperateScope,
-            message: "This connection cannot change threads.",
+            message: translateMessage(msg("This connection cannot change threads.")),
           }),
         ),
       );

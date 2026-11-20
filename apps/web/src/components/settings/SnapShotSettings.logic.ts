@@ -1,3 +1,6 @@
+import { localizeSnapShotMessage } from "./snapShotMessages";
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { ClientSettingsPatch, DesktopSnapShotState, SnapShotSound } from "@t3tools/contracts";
 import {
   captureSetupBackend,
@@ -7,53 +10,68 @@ import {
 } from "./SnapShotSetupDialog.logic";
 
 export function snapShotStatus(state: DesktopSnapShotState | null, enabled: boolean): string {
-  if (!state) return "Checking snapshots…";
-  if (state.mode === "unavailable") return state.message ?? "Not supported on this platform.";
-  if (!enabled) return "Turn this on to set up snapshots.";
+  if (!state) return translateMessage(msg("Checking snapshots…"));
+  if (state.mode === "unavailable")
+    return state.message
+      ? localizeSnapShotMessage(state.message)
+      : translateMessage(msg("Not supported on this platform."));
+  if (!enabled) return translateMessage(msg("Turn this on to set up snapshots."));
   return snapShotSetupSummary(state, enabled);
 }
 
 export function snapShotSetupSummary(state: DesktopSnapShotState, enabled: boolean): string {
-  if (state.message) return "Capture needs attention";
+  if (state.message) return translateMessage(msg("Capture needs attention"));
   if (state.linuxBackend === "hyprland" && state.hyprlandHelper?.status !== "ready")
     return state.hyprlandHelper?.status === "error"
-      ? "Check capture access in setup"
-      : "Install the capture helper to continue";
+      ? translateMessage(msg("Check capture access in setup"))
+      : translateMessage(msg("Install the capture helper to continue"));
   if (captureSetupBackend(state) === "gnome" && state.gnomeExtension?.status !== "enabled")
-    return "Set up active-window snapshots";
+    return translateMessage(msg("Set up active-window snapshots"));
   if (captureSetupBackend(state) === "kde" && state.kdeHelper?.status !== "ready")
     return state.kdeHelper?.status === "error"
-      ? "Check capture access in setup"
-      : "Install the capture helper to continue";
+      ? translateMessage(msg("Check capture access in setup"))
+      : translateMessage(msg("Install the capture helper to continue"));
   if (captureSetupBackend(state) === "picker")
-    return "Manual capture only. You'll choose a window each time";
-  if (!enabled) return "Enable capture to continue";
+    return translateMessage(msg("Manual capture only. You'll choose a window each time"));
+  if (!enabled) return translateMessage(msg("Enable capture to continue"));
   if (state.shortcutPending)
     return state.linuxBackend === "hyprland"
-      ? "Connecting your shortcut…"
-      : "Waiting for shortcut permission";
-  if (state.shortcutVerified) return "Ready to capture";
+      ? translateMessage(msg("Connecting your shortcut…"))
+      : translateMessage(msg("Waiting for shortcut permission"));
+  if (state.shortcutVerified) return translateMessage(msg("Ready to capture"));
   if (state.linuxBackend === "niri" && state.shortcutBinding)
-    return "Use your shortcut from another app";
+    return translateMessage(msg("Use your shortcut from another app"));
   if (state.linuxBackend === "hyprland" && state.shortcutActionRegistered)
-    return "Use your shortcut from another app";
-  if (state.shortcutRegistered) return state.shortcutLabel ? "Ready to capture" : "Shortcut saved";
-  return "Finish shortcut setup";
+    return translateMessage(msg("Use your shortcut from another app"));
+  if (state.shortcutRegistered)
+    return state.shortcutLabel
+      ? translateMessage(msg("Ready to capture"))
+      : translateMessage(msg("Shortcut saved"));
+  return translateMessage(msg("Finish shortcut setup"));
 }
 
 export function snapShotShortcutStatus(state: DesktopSnapShotState | null): string | null {
   if (!state) return null;
-  if (state.linuxBackend === "hyprland") return state.shortcutMessage;
-  if (state.shortcutPending) return "Approve the shortcut permission prompt to continue.";
-  if (state.shortcutRegistered) return state.mode === "portal" ? null : "Shortcut saved.";
-  return state.shortcutMessage;
+  if (state.linuxBackend === "hyprland")
+    return state.shortcutMessage
+      ? localizeSnapShotMessage(state.shortcutMessage)
+      : state.shortcutMessage;
+  if (state.shortcutPending)
+    return translateMessage(msg("Approve the shortcut permission prompt to continue."));
+  if (state.shortcutRegistered)
+    return state.mode === "portal" ? null : translateMessage(msg("Shortcut saved."));
+  return state.shortcutMessage
+    ? localizeSnapShotMessage(state.shortcutMessage)
+    : state.shortcutMessage;
 }
 
 export function snapShotSetupButtonLabel(state: DesktopSnapShotState | null): string {
-  if (!state) return "Continue setup";
-  if (captureSetupAccessReady(state)) return "Manage capture";
+  if (!state) return translateMessage(msg("Continue setup"));
+  if (captureSetupAccessReady(state)) return translateMessage(msg("Manage capture"));
   const desktop = captureSetupDesktopName(state);
-  return desktop ? `Set up ${desktop} capture` : "Continue setup";
+  return desktop
+    ? translateMessage(msg("Set up {value0} capture"), { value0: desktop })
+    : translateMessage(msg("Continue setup"));
 }
 
 export function snapShotSetupComplete(
@@ -93,8 +111,8 @@ export function snapShotFeedbackUnavailableMessage(
 
 export function snapShotDescription(state: DesktopSnapShotState | null): string {
   return state?.mode === "portal" && captureSetupBackend(state) === "picker"
-    ? "Automatic capture isn't available here. Choose a window instead."
-    : "Capture a window and attach it to your current draft.";
+    ? translateMessage(msg("Automatic capture isn't available here. Choose a window instead."))
+    : translateMessage(msg("Capture a window and attach it to your current draft."));
 }
 
 export function snapShotAccessibilityUnavailableMessage(

@@ -1,3 +1,5 @@
+import { translateMessage } from "./i18n/translateMessage";
+import { msg } from "gt-react";
 import { EDITORS, type EditorId } from "@t3tools/contracts";
 
 import { getLocalFileManagerName } from "~/lib/utils";
@@ -9,11 +11,13 @@ export function editorLabelForPlatform(editorId: EditorId, platform: string): st
     return getLocalFileManagerName(platform);
   }
 
-  return editorLabels.get(editorId) ?? "Editor";
+  return editorLabels.get(editorId) ?? translateMessage(msg("Editor"));
 }
 
 export function openInEditorMenuLabel(editorId: EditorId | null): string {
   return editorId === null || editorId === "file-manager"
-    ? "Open in editor"
-    : `Open in ${editorLabels.get(editorId) ?? "Editor"}`;
+    ? translateMessage(msg("Open in editor"))
+    : translateMessage(msg("Open in {value0}"), {
+        value0: editorLabels.get(editorId) ?? translateMessage(msg("Editor")),
+      });
 }

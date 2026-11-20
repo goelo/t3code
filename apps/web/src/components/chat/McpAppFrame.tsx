@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+import { useGT, T } from "gt-react";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import {
   makeMcpAppHost,
@@ -43,7 +46,9 @@ const commandFailure = (result: {
   const error = squashAtomCommandFailure(result);
   return new McpAppHostRefusal({
     message:
-      error instanceof Error && error.message.trim() !== "" ? error.message : "Request failed.",
+      error instanceof Error && error.message.trim() !== ""
+        ? error.message
+        : translateMessage(msg("Request failed.")),
   });
 };
 
@@ -88,6 +93,7 @@ export function McpAppFrame(props: {
   readonly awaitingUser?: boolean;
   readonly onFullscreenChange?: (fullscreen: boolean) => void;
 }) {
+  const gt = useGT();
   const { app } = props;
   const theme = useHtmlRenderTheme();
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -260,7 +266,7 @@ export function McpAppFrame(props: {
       flushSync(() => setDisplayMode("inline"));
       const approved = await requestConfirmDialog(message);
       if (approved === undefined) {
-        throw new McpAppHostRefusal({ message: "T3 could not ask for approval here." });
+        throw new McpAppHostRefusal({ message: gt("T3 could not ask for approval here.") });
       }
       return approved;
     };
@@ -280,12 +286,13 @@ export function McpAppFrame(props: {
         const info = await readLive().toolInfo({ environmentId, input: { ...input, name } });
         if (info._tag !== "Success") throw commandFailure(info);
         if (!info.value.callable)
-          throw new McpAppHostRefusal({ message: "This app cannot call that tool." });
+          throw new McpAppHostRefusal({ message: gt("This app cannot call that tool.") });
         if (!info.value.readOnly) {
           const approved = await ask(
             `Allow ${app.server} to run ${info.value.title ?? name}?\n${JSON.stringify(args, null, 2)}`,
           );
-          if (approved !== true) throw new McpAppHostRefusal({ message: "Declined by the user." });
+          if (approved !== true)
+            throw new McpAppHostRefusal({ message: gt("Declined by the user.") });
         }
         const result = await readLive().callTool({
           environmentId,
@@ -305,16 +312,17 @@ export function McpAppFrame(props: {
       },
       openLink: async (url) => {
         if (document.activeElement !== frameRef.current || !navigator.userActivation?.isActive) {
-          throw new McpAppHostRefusal({ message: "Links open only from a click in the app." });
+          throw new McpAppHostRefusal({ message: gt("Links open only from a click in the app.") });
         }
         window.open(url, "_blank", "noopener,noreferrer");
       },
       sendMessage: async (text) => {
         const send = readLive().props.onSendMessage;
         if (send === undefined)
-          throw new McpAppHostRefusal({ message: "Messages are not available here." });
+          throw new McpAppHostRefusal({ message: gt("Messages are not available here.") });
         const approved = await ask(`Send this message from ${app.server}?\n${text}`);
-        if (approved !== true) throw new McpAppHostRefusal({ message: "Declined by the user." });
+        if (approved !== true)
+          throw new McpAppHostRefusal({ message: gt("Declined by the user.") });
         await send(text);
       },
       updateModelContext: async (context) => {
@@ -349,7 +357,8 @@ export function McpAppFrame(props: {
       downloadFile: async (files) => {
         const names = files.map((file) => file.name).join(", ");
         const approved = await ask(`Save ${names} from ${app.server}?`);
-        if (approved !== true) throw new McpAppHostRefusal({ message: "Declined by the user." });
+        if (approved !== true)
+          throw new McpAppHostRefusal({ message: gt("Declined by the user.") });
         for (const file of files) {
           let bytes: Uint8Array | undefined;
           let mimeType = file.mimeType ?? "application/octet-stream";
@@ -368,9 +377,13 @@ export function McpAppFrame(props: {
             if (typeof declared === "string") mimeType = declared;
           }
           if (bytes === undefined)
-            throw new McpAppHostRefusal({ message: `${file.name} has no contents.` });
+            throw new McpAppHostRefusal({
+              message: gt("{value0} has no contents.", { value0: file.name }),
+            });
           if (bytes.byteLength > MAX_DOWNLOAD_BYTES) {
-            throw new McpAppHostRefusal({ message: `${file.name} is too large to save.` });
+            throw new McpAppHostRefusal({
+              message: gt("{value0} is too large to save.", { value0: file.name }),
+            });
           }
           saveBlob(new Blob([bytes.slice()], { type: mimeType }), file.name);
         }
@@ -416,7 +429,11 @@ export function McpAppFrame(props: {
   if (closed) {
     return (
       <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-muted-foreground text-xs">
-        <span>The {app.server} app was closed</span>
+        <span>
+          <T>The </T>
+          {app.server}
+          <T> app was closed</T>
+        </span>
         <Button
           size="xs"
           variant="ghost"
@@ -426,7 +443,7 @@ export function McpAppFrame(props: {
             setClosed(false);
           }}
         >
-          Show app
+          <T>Show app</T>
         </Button>
       </div>
     );
@@ -458,7 +475,7 @@ export function McpAppFrame(props: {
           >
             <span className="truncate">{app.server}</span>
             <Button
-              aria-label="Exit full screen"
+              aria-label={gt("Exit full screen")}
               size="icon-sm"
               variant="ghost"
               onClick={() => setDisplayMode("inline")}
@@ -469,13 +486,15 @@ export function McpAppFrame(props: {
         ) : null}
         {navigatedAway ? (
           <p className="flex size-full items-center justify-center text-muted-foreground text-xs">
-            The {app.server} app left its page and was stopped
+            <T>The </T>
+            {app.server}
+            <T> app left its page and was stopped</T>
           </p>
         ) : src !== null ? (
           <iframe
             ref={attachFrame}
             src={src}
-            title={`${app.server} app`}
+            title={gt("{value0} app", { value0: app.server })}
             // Omitting allow-same-origin isolates the app from the session.
             sandbox="allow-scripts allow-forms"
             allow={mcpAppAllowAttribute(app.permissions)}
@@ -485,7 +504,9 @@ export function McpAppFrame(props: {
           />
         ) : asset._tag === "Failure" ? (
           <p className="flex size-full items-center justify-center text-muted-foreground text-xs">
-            Unable to load the {app.server} app
+            <T>Unable to load the </T>
+            {app.server}
+            <T> app</T>
           </p>
         ) : null}
       </div>

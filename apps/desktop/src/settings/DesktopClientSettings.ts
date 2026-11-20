@@ -13,11 +13,15 @@ import * as Ref from "effect/Ref";
 
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
 
-const ClientSettingsJson = fromLenientJson(ClientSettingsSchema);
+const DesktopClientSettingsSchema = Schema.Struct({
+  ...ClientSettingsSchema.fields,
+  language: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed("zh"))),
+});
+const ClientSettingsJson = fromLenientJson(DesktopClientSettingsSchema);
 const decodeClientSettingsDocument = Schema.decodeEffect(
   fromLenientJson(Schema.Record(Schema.String, Schema.Unknown)),
 );
-const decodeClientSettingsValue = Schema.decodeUnknownEffect(ClientSettingsSchema);
+const decodeClientSettingsValue = Schema.decodeUnknownEffect(DesktopClientSettingsSchema);
 const decodeClientSettingsJson = Effect.fnUntraced(function* (raw: string) {
   const document = yield* decodeClientSettingsDocument(raw);
   // Select the shape before validation so invalid legacy settings cannot become defaults.

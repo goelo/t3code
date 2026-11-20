@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import type {
   EnvironmentId,
   PullRequestDetailView,
@@ -30,6 +31,7 @@ export function PullRequestResolveThreadButton({
   thread: Pick<PullRequestConversationThread, "id" | "isResolved" | "canResolve">;
   onRefresh: () => void;
 }) {
+  const gt = useGT();
   const [pending, setPending] = useState(false);
   const setThreadResolution = useAtomCommand(pullRequestEnvironment.setThreadResolution, {
     reportFailure: false,
@@ -46,7 +48,7 @@ export function PullRequestResolveThreadButton({
     });
     setPending(false);
     if (result._tag === "Failure") {
-      toastManager.add({ type: "error", title: "The conversation could not be updated" });
+      toastManager.add({ type: "error", title: gt("The conversation could not be updated") });
       return;
     }
     onRefresh();
@@ -60,7 +62,7 @@ export function PullRequestResolveThreadButton({
       disabled={pending}
       onClick={() => void toggle()}
     >
-      {thread.isResolved ? "Unresolve" : "Resolve"}
+      {thread.isResolved ? gt("Unresolve") : gt("Resolve")}
     </Button>
   );
 }

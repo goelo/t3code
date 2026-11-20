@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { DpopProof } from "@t3tools/client-runtime/relay";
 import { computeDpopJwkThumbprint, DpopPublicJwk } from "@t3tools/shared/dpop";
 import * as Digest from "effect/crypto/Digest";
@@ -144,13 +146,14 @@ export const loadOrCreateProofKey = Effect.fn("dpop.loadOrCreateProofKey")(funct
   return {
     publicJwk: browserKey.publicJwk,
     sign: (signingInput) =>
-      signature
-        .sign(privateKey, signingInput)
-        .pipe(
-          Effect.mapError(
-            (cause) =>
-              new DpopProof.DpopProofError({ message: "Could not sign DPoP proof.", cause }),
-          ),
+      signature.sign(privateKey, signingInput).pipe(
+        Effect.mapError(
+          (cause) =>
+            new DpopProof.DpopProofError({
+              message: translateMessage(msg("Could not sign DPoP proof.")),
+              cause,
+            }),
         ),
+      ),
   } satisfies DpopProof.DpopProofKey;
 });

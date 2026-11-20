@@ -1,3 +1,5 @@
+import { translateMessage } from "../../../i18n/translateMessage";
+import { msg } from "gt-react";
 // Adapted from opencode (MIT). Copyright (c) 2025 opencode. See LICENSE.opencode.
 // The engines run in a worker per open file, so no layout, recalculation or painting holds the window. These are the
 // two ends of that worker's protocol: typed calls by method name, a key that lets a newer call replace a queued one
@@ -102,7 +104,11 @@ export function createWorkerClient<M extends Methods>(worker: Worker) {
     fail(new WorkerClosedError({ message: event.message || "The Office engine stopped" })),
   );
   worker.addEventListener("messageerror", () =>
-    fail(new WorkerClosedError({ message: "The Office engine sent an unreadable reply" })),
+    fail(
+      new WorkerClosedError({
+        message: translateMessage(msg("The Office engine sent an unreadable reply")),
+      }),
+    ),
   );
 
   return {
@@ -114,7 +120,9 @@ export function createWorkerClient<M extends Methods>(worker: Worker) {
       if (state.failure) return Promise.reject(state.failure);
 
       if (options.signal?.aborted)
-        return Promise.reject(new WorkerClosedError({ message: "The call was aborted" }));
+        return Promise.reject(
+          new WorkerClosedError({ message: translateMessage(msg("The call was aborted")) }),
+        );
 
       const id = ++state.next;
 
@@ -123,7 +131,9 @@ export function createWorkerClient<M extends Methods>(worker: Worker) {
           () =>
             fail(
               new WorkerClosedError({
-                message: "This document took too long to preview. Open it in another app.",
+                message: translateMessage(
+                  msg("This document took too long to preview. Open it in another app."),
+                ),
               }),
             ),
           30_000,
@@ -131,7 +141,7 @@ export function createWorkerClient<M extends Methods>(worker: Worker) {
         const abort = () => {
           clearTimeout(timeout);
           pending.delete(id);
-          reject(new WorkerClosedError({ message: "The call was aborted" }));
+          reject(new WorkerClosedError({ message: translateMessage(msg("The call was aborted")) }));
           worker.postMessage({ cancel: id } satisfies Cancel, []);
         };
 
@@ -164,7 +174,9 @@ export function createWorkerClient<M extends Methods>(worker: Worker) {
     },
     /** Stops the worker, which frees its engine's memory, and fails every pending call. */
     close() {
-      fail(new WorkerClosedError({ message: "The Office engine was closed" }));
+      fail(
+        new WorkerClosedError({ message: translateMessage(msg("The Office engine was closed")) }),
+      );
     },
   };
 }
@@ -218,7 +230,7 @@ export function serveWorker<M extends Methods>(handlers: {
           id: request.id,
           ok: false,
           superseded: false,
-          message: `Unknown method ${request.method}`,
+          message: translateMessage(msg("Unknown method {value0}"), { value0: request.method }),
         });
         continue;
       }
@@ -282,7 +294,12 @@ export function serveWorker<M extends Methods>(handlers: {
       const [old] = queue.splice(replaced, 1);
 
       if (old)
-        reply({ id: old.id, ok: false, superseded: true, message: "Replaced by a newer call" });
+        reply({
+          id: old.id,
+          ok: false,
+          superseded: true,
+          message: translateMessage(msg("Replaced by a newer call")),
+        });
     }
 
     queue.push(event.data);

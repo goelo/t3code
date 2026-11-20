@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   AuthOrchestrationOperateScope,
   PROVIDER_SEND_TURN_SUPPORTED_IMAGE_MIME_TYPES,
@@ -169,7 +171,7 @@ async function runUpload(job: UploadJob): Promise<void> {
     setUploadState(job.image.id, {
       status: "failed",
       environmentId: job.environmentId,
-      reason: "This connection cannot upload attachments.",
+      reason: translateMessage(msg("This connection cannot upload attachments.")),
       ...(job.previous ? { previous: job.previous } : {}),
     });
     return;
@@ -235,7 +237,7 @@ async function runUpload(job: UploadJob): Promise<void> {
     setUploadState(job.image.id, {
       status: "failed",
       environmentId: job.environmentId,
-      reason: "Unsupported image type",
+      reason: translateMessage(msg("Unsupported image type")),
       ...(job.previous ? { previous: job.previous } : {}),
     });
     return;
@@ -245,7 +247,7 @@ async function runUpload(job: UploadJob): Promise<void> {
     setUploadState(job.image.id, {
       status: "failed",
       environmentId: job.environmentId,
-      reason: "Original file is no longer available",
+      reason: translateMessage(msg("Original file is no longer available")),
       ...(job.previous ? { previous: job.previous } : {}),
     });
     return;
@@ -256,7 +258,7 @@ async function runUpload(job: UploadJob): Promise<void> {
     setUploadState(job.image.id, {
       status: "failed",
       environmentId: job.environmentId,
-      reason: "This connection cannot upload attachments.",
+      reason: translateMessage(msg("This connection cannot upload attachments.")),
       ...(job.previous ? { previous: job.previous } : {}),
     });
     return;
@@ -366,7 +368,7 @@ function pumpUploads(): void {
           setUploadState(job.image.id, {
             status: "failed",
             environmentId: job.environmentId,
-            reason: "Upload failed",
+            reason: translateMessage(msg("Upload failed")),
             ...(job.previous ? { previous: job.previous } : {}),
           });
         }

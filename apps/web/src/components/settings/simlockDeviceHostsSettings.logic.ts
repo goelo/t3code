@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   SimlockDeviceHostConfig,
   type EnvironmentId,
@@ -12,7 +14,7 @@ const parseSimlockDeviceHostDraft = Schema.decodeUnknownOption(SimlockDeviceHost
 export const newSimlockDeviceHost = (id: string): SimlockDeviceHostConfigType => ({
   kind: "simlock",
   id,
-  label: "Simlock",
+  label: translateMessage(msg("Simlock")),
   gatewayUrl: "",
   agentToken: "",
   maxLeases: 2,

@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { type OrchestrationV2ProviderTurn, type RunAttemptId } from "@t3tools/contracts";
 import {
   deriveLatestThreadRun,
@@ -438,7 +440,7 @@ export function buildLocalDraftThread(
   return presentThreadShell(draftThread.environmentId, {
     id: threadId,
     projectId: draftThread.projectId,
-    title: "New thread",
+    title: translateMessage(msg("New thread")),
     providerInstanceId: fallbackModelSelection.instanceId,
     modelSelection: fallbackModelSelection,
     runtimeMode: draftThread.runtimeMode,
@@ -756,13 +758,24 @@ export function buildExpiredTerminalContextToastCopy(
   const pronoun = count === 1 ? "it" : "them";
   if (variant === "empty") {
     return {
-      title: `${noun} won't be sent`,
-      description: `Remove ${pronoun} or re-add ${pronoun} to include terminal output.`,
+      title: translateMessage(msg("{value0} won't be sent"), { value0: noun }),
+      description: translateMessage(
+        msg("Remove {value0} or re-add {value1} to include terminal output."),
+        {
+          value0: pronoun,
+          value1: pronoun,
+        },
+      ),
     };
   }
   return {
-    title: `${noun} omitted from message`,
-    description: `Re-add ${pronoun} if you want that terminal output included.`,
+    title: translateMessage(msg("{value0} omitted from message"), { value0: noun }),
+    description: translateMessage(
+      msg("Re-add {value0} if you want that terminal output included."),
+      {
+        value0: pronoun,
+      },
+    ),
   };
 }
 
@@ -876,8 +889,10 @@ export function getStartedThreadModelChangeBlockReason(input: {
     return null;
   }
   return {
-    title: "Start a new chat to switch providers",
-    description: "This thread does not support switching providers after it has started.",
+    title: translateMessage(msg("Start a new chat to switch providers")),
+    description: translateMessage(
+      msg("This thread does not support switching providers after it has started."),
+    ),
   };
 }
 

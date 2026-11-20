@@ -1,3 +1,5 @@
+import { msg, useMessages } from "gt-react";
+import { T } from "gt-react";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 import type { ServerProvider } from "@t3tools/contracts";
 import { useId } from "react";
@@ -5,10 +7,13 @@ import { OpenAI } from "../Icons";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
-const speedNotice =
-  "Fast and Ultrafast are unavailable with this ChatGPT connection. Use an existing Codex CLI login for speed options your account supports.";
+const speedNotice = msg(
+  "Fast and Ultrafast are unavailable with this ChatGPT connection. Use an existing Codex CLI login for speed options your account supports.",
+);
 
 export function ChatGptSharingControl({ provider }: { provider: ServerProvider | null }) {
+  const m = useMessages();
+
   const speedNoticeId = useId();
   if (!usesChatGptSharing(provider)) return null;
   return (
@@ -24,12 +29,12 @@ export function ChatGptSharingControl({ provider }: { provider: ServerProvider |
           }
         >
           <OpenAI className="size-3.5" aria-hidden="true" />
-          Using ChatGPT plan
+          <T>Using ChatGPT plan</T>
         </TooltipTrigger>
         <span id={speedNoticeId} className="sr-only">
-          {speedNotice}
+          {m(speedNotice)}
         </span>
-        <TooltipPopup side="top">{speedNotice}</TooltipPopup>
+        <TooltipPopup side="top">{m(speedNotice)}</TooltipPopup>
       </Tooltip>
       <ChatGptUsageButton size="xs" />
     </div>

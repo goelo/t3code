@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { useGT, T, msg } from "gt-react";
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
@@ -43,6 +45,7 @@ export default function LargeTextViewer(props: {
   /** A preview's own wrap toggle; omitted follows the word wrap setting. */
   readonly wordWrap?: boolean;
 }) {
+  const gt = useGT();
   const [meta, setMeta] = useState<Extract<TextPreviewResult, { type: "meta" }> | null>(null);
   const [pages, setPages] = useState(new Map<number, string[][]>());
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +135,9 @@ export default function LargeTextViewer(props: {
       engine.addEventListener("error", () => {
         copyPending.current?.reject(new Error("The text viewer stopped."));
         copyPending.current = null;
-        setError("Could not load the text viewer. Close the file and try again.");
+        setError(
+          translateMessage(msg("Could not load the text viewer. Close the file and try again.")),
+        );
       });
       engine.postMessage(
         {
@@ -224,17 +229,19 @@ export default function LargeTextViewer(props: {
           ? `${countLabel(Math.max(0, meta.count - 1), "row")} · ${countLabel(meta.count ? meta.columns : 0, "column")}`
           : countLabel(meta.count, "line")}
         {meta.complete && meta.sizeBytes !== undefined
-          ? ` · ${meta.sizeBytes === 0 ? "0 bytes" : formatAttachmentSize(meta.sizeBytes)}`
-          : " · Indexing…"}
+          ? ` · ${meta.sizeBytes === 0 ? gt("0 bytes") : formatAttachmentSize(meta.sizeBytes)}`
+          : gt(" · Indexing…")}
       </div>
       {!meta.complete ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20">
-          <FileSurfaceNotice>Loading the rest of the file…</FileSurfaceNotice>
+          <FileSurfaceNotice>
+            <T>Loading the rest of the file…</T>
+          </FileSurfaceNotice>
         </div>
       ) : null}
       {meta.columns === 1024 ? (
         <FileSurfaceNotice>
-          Showing the first 1,024 columns. Source and Save retain every column.
+          <T>Showing the first 1,024 columns. Source and Save retain every column.</T>
         </FileSurfaceNotice>
       ) : null}
       {meta.count > 0 ? (
@@ -256,7 +263,7 @@ export default function LargeTextViewer(props: {
         />
       ) : (
         <div className="flex flex-1 items-center justify-center p-6 text-xs text-muted-foreground">
-          This file is empty.
+          <T>This file is empty.</T>
         </div>
       )}
     </div>

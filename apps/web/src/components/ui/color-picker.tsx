@@ -1,3 +1,4 @@
+import { useGT, T } from "gt-react";
 import {
   useId,
   useRef,
@@ -66,6 +67,7 @@ export function ColorSaturationValuePlane({
   className,
   variant = "inset",
 }: ColorControlProps<HsvColor> & { variant?: "inset" | "edge" }) {
+  const gt = useGT();
   const instructionsId = useId();
   const saturationRef = useRef<HTMLInputElement>(null);
   const { handlers, thumbTransition } = useColorDrag(
@@ -109,7 +111,7 @@ export function ColorSaturationValuePlane({
 
   return (
     <div
-      aria-label={`${label} saturation and brightness`}
+      aria-label={gt("{value0} saturation and brightness", { value0: label })}
       role="group"
       className={cn(
         "relative cursor-crosshair touch-none overflow-hidden bg-[linear-gradient(to_top,#000,transparent),linear-gradient(to_right,#fff,transparent)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-popover",
@@ -122,13 +124,15 @@ export function ColorSaturationValuePlane({
       {...handlers}
     >
       <span id={instructionsId} className="sr-only">
-        Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End
-        for the minimum and maximum. Press Tab to move between saturation and brightness.
+        <T>
+          Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End
+          for the minimum and maximum. Press Tab to move between saturation and brightness.
+        </T>
       </span>
       {(
         [
-          ["s", "Saturation"],
-          ["v", "Brightness"],
+          ["s", gt("Saturation")],
+          ["v", gt("Brightness")],
         ] as const
       ).map(([axis, axisLabel]) => (
         <label key={axis} className="contents">

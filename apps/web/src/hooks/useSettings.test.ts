@@ -1,5 +1,6 @@
 import { DEFAULT_SERVER_SETTINGS, ProviderInstanceId } from "@t3tools/contracts";
-import { DEFAULT_CLIENT_SETTINGS, type ClientSettings } from "@t3tools/contracts/settings";
+import type { ClientSettings } from "@t3tools/contracts/settings";
+import { DEFAULT_CLIENT_SETTINGS } from "../clientSettingsDefaults";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const persistenceMocks = vi.hoisted(() => ({
@@ -34,8 +35,23 @@ afterEach(() => {
 });
 
 describe("client settings hydration", () => {
+  it.each(["en", "zh"])(
+    "defaults to Chinese and retains a saved %s preference",
+    async (language) => {
+      await ensureClientSettingsHydrated();
+      expect(getClientSettings().language).toBe("zh");
+      await persistClientSettingsPatch({ language });
+      const stored = persistenceMocks.setClientSettings.mock.lastCall?.[0];
+      expect(stored?.language).toBe(language);
+      persistenceMocks.getClientSettings.mockResolvedValue(stored ?? null);
+      __resetClientSettingsPersistenceForTests();
+      await ensureClientSettingsHydrated();
+      expect(getClientSettings().language).toBe(language);
+    },
+  );
   const savedSettings = {
     ...DEFAULT_CLIENT_SETTINGS,
+    language: "en",
     timestampFormat: "12-hour" as const,
     favorites: [{ provider: ProviderInstanceId.make("codex_work"), model: "gpt-5.6" }],
   };
@@ -94,6 +110,7 @@ describe("client settings hydration", () => {
 
     const completedSettings = { ...savedSettings, onboardingCompletedAt };
     await expect(persistClientSettingsUpdate(complete)).resolves.toEqual(completedSettings);
+    expect(getClientSettings().language).toBe("en");
     expect(persistenceMocks.setClientSettings).toHaveBeenCalledExactlyOnceWith(completedSettings);
     expect(persistenceMocks.getClientSettings).toHaveBeenCalledTimes(2);
   });

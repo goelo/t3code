@@ -1,3 +1,4 @@
+import { useGT, msg, useMessages } from "gt-react";
 import type {
   EnvironmentId,
   ProjectId,
@@ -95,17 +96,18 @@ function useCompletions(
 }
 
 function ReferenceStateIcon({ candidate }: { candidate: PullRequestReferenceCandidate }) {
+  const gt = useGT();
   const presentation =
     candidate.kind === "change-request"
       ? resolvePullRequestState({ state: candidate.state, isDraft: false })
       : candidate.state === "open"
         ? {
-            label: "Open issue",
+            label: gt("Open issue"),
             Icon: CircleDotIcon,
             toneClassName: PULL_REQUEST_STATE_PRESENTATION.open.toneClassName,
           }
         : {
-            label: "Closed issue",
+            label: gt("Closed issue"),
             Icon: CircleCheckIcon,
             toneClassName: PULL_REQUEST_STATE_PRESENTATION.merged.toneClassName,
           };
@@ -143,13 +145,13 @@ function CompletionRow({ completion }: { completion: PullRequestCompletion }) {
 
 const EMPTY_STATE = {
   mention: {
-    label: "Mention a user",
+    label: msg("Mention a user"),
     pending: "Searching users...",
     failed: "Couldn't search users on the host",
     none: "No matching users",
   },
   reference: {
-    label: "Reference an issue or change request",
+    label: msg("Reference an issue or change request"),
     pending: "Searching...",
     failed: "Couldn't search the host",
     none: "No matching issues or change requests",
@@ -177,6 +179,8 @@ export function PullRequestMarkdownTextarea({
   readonly onValueChange: (value: string) => void;
   readonly completionScope: PullRequestCompletionScope | null;
 }) {
+  const m = useMessages();
+
   const listId = useId();
   const [element, setElement] = useState<HTMLTextAreaElement | null>(null);
   const [caret, setCaret] = useState<number | null>(null);
@@ -299,7 +303,7 @@ export function PullRequestMarkdownTextarea({
             <div
               id={listId}
               role="listbox"
-              aria-label={EMPTY_STATE[trigger?.kind ?? "mention"].label}
+              aria-label={m(EMPTY_STATE[trigger?.kind ?? "mention"].label)}
               className="-mx-1.5"
             >
               {candidates.map((completion, index) => (
@@ -325,11 +329,11 @@ export function PullRequestMarkdownTextarea({
             </div>
           ) : (
             <p className="px-1 text-xs text-muted-foreground">
-              {
+              {m(
                 EMPTY_STATE[trigger?.kind ?? "mention"][
                   isPending ? "pending" : failed ? "failed" : "none"
-                ]
-              }
+                ],
+              )}
             </p>
           )}
         </PopoverPopup>

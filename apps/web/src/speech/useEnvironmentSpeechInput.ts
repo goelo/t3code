@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   cancelEnvironmentSpeechModelDownload,
   downloadEnvironmentSpeechModel,
@@ -349,8 +351,8 @@ export function useEnvironmentSpeechInput(input: HookInput) {
       onPostProcessingError: () =>
         toastManager.add({
           type: "warning",
-          title: "Transcript cleanup failed",
-          description: "The original transcript was added.",
+          title: translateMessage(msg("Transcript cleanup failed")),
+          description: translateMessage(msg("The original transcript was added.")),
         }),
       readDraft,
       commitDraft: (text, selection) => {
@@ -507,7 +509,7 @@ export function useEnvironmentSpeechInput(input: HookInput) {
       setQueuedStart(null);
       toastManager.add({
         type: "error",
-        title: "Could not start voice input",
+        title: translateMessage(msg("Could not start voice input")),
         description: error instanceof Error ? error.message : String(error),
       });
       return;
@@ -521,7 +523,7 @@ export function useEnvironmentSpeechInput(input: HookInput) {
     if (!latestStatus.supported) {
       toastManager.add({
         type: "error",
-        title: "Voice input is not available",
+        title: translateMessage(msg("Voice input is not available")),
         description: latestStatus.reason,
       });
       return;

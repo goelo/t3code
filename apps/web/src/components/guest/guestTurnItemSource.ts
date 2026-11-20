@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   applyCommandOutputFrame,
   EMPTY_COMMAND_OUTPUT,
@@ -49,7 +51,8 @@ const guestItemDetailAtom = Atom.family((key: string) => {
   return Atom.make(
     Effect.tryPromise({
       try: () => fetchGuestItemDetail(shareId, itemId),
-      catch: () => new GuestItemReadError({ message: "Could not load this item." }),
+      catch: () =>
+        new GuestItemReadError({ message: translateMessage(msg("Could not load this item.")) }),
     }),
   );
 });
@@ -75,7 +78,11 @@ const guestCommandOutputAtom = Atom.family((key: string) => {
           if (source.readyState === EventSource.CLOSED) {
             Queue.failCauseUnsafe(
               queue,
-              Cause.fail(new GuestItemReadError({ message: "Output is no longer available." })),
+              Cause.fail(
+                new GuestItemReadError({
+                  message: translateMessage(msg("Output is no longer available.")),
+                }),
+              ),
             );
           }
         });

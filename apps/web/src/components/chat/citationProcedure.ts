@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import { type AtomCommandSuccess, runAtomCommand } from "@t3tools/client-runtime/state/runtime";
 import { Atom, type AtomRegistry } from "effect/reactivity";
@@ -38,15 +40,16 @@ const MAX_CITATION_PAGES = 20;
 
 const COULD_NOT_LOAD = {
   _tag: "failed",
-  title: "Could not load the cited response",
-  description:
+  title: msg("Could not load the cited response"),
+  description: msg(
     "Load earlier turns, then click the citation to try again. Your saved quote is unchanged.",
+  ),
 } as const;
 
 const UNAVAILABLE = {
   _tag: "failed",
-  title: "The cited response is unavailable",
-  description: "It may have been removed. The selected text is still saved in your citation.",
+  title: msg("The cited response is unavailable"),
+  description: msg("It may have been removed. The selected text is still saved in your citation."),
 } as const;
 
 /**
@@ -68,8 +71,8 @@ export async function loadCitedHistory(input: {
     if (thread.message === "other") {
       return {
         _tag: "failed",
-        title: "The citation does not refer to an assistant response",
-        description: "The selected text is still saved in your citation.",
+        title: translateMessage(msg("The citation does not refer to an assistant response")),
+        description: translateMessage(msg("The selected text is still saved in your citation.")),
       };
     }
     if (!thread.hasMoreHistory) return UNAVAILABLE;
@@ -202,11 +205,11 @@ const citedHistoryAtom = Atom.family(
             get.registry,
             threadEnvironment.loadEarlierHistory,
             { environmentId, input: { threadId, throughEntryId: messageId } },
-            { label: "load cited thread history", reportFailure: false },
+            { label: translateMessage(msg("load cited thread history")), reportFailure: false },
           );
           return result._tag === "Success"
             ? result.value
-            : { _tag: "error", message: "Could not load history." };
+            : { _tag: "error", message: translateMessage(msg("Could not load history.")) };
         },
       }).then((outcome) => {
         if (outcome._tag === "aborted") return;

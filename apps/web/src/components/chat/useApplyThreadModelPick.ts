@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { RegistryContext } from "@effect/atom-react";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import {
@@ -15,7 +18,7 @@ import { stackedThreadToast, toastManager } from "../ui/toast";
 export function useApplyThreadModelPick() {
   const registry = useContext(RegistryContext);
   const setModelSelection = useOrchestrationCommand(threadEnvironment.setModelSelection, {
-    label: "change model",
+    label: translateMessage(msg("change model")),
   });
   return async (target: ComposerThreadTarget) => {
     if (typeof target === "string") return;
@@ -39,8 +42,10 @@ export function useApplyThreadModelPick() {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Could not apply model selection",
-          description: `This model pick was not saved. ${error instanceof Error ? error.message : "Try again."}`,
+          title: translateMessage(msg("Could not apply model selection")),
+          description: translateMessage(msg("This model pick was not saved. {value0}"), {
+            value0: error instanceof Error ? error.message : translateMessage(msg("Try again.")),
+          }),
         }),
       );
     }

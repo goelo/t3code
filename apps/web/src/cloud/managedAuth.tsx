@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { useClerk } from "@clerk/react";
 import {
   createCloudAccountService,
@@ -54,7 +56,7 @@ const managedRelayAccountService = createCloudAccountService<ClerkInstance>({
       ),
     ]);
     for (const result of results) {
-      reportAtomCommandResult(result, { label: "cloud account cleanup" });
+      reportAtomCommandResult(result, { label: translateMessage(msg("cloud account cleanup")) });
     }
   },
   activate: ({ source, accountId }) =>

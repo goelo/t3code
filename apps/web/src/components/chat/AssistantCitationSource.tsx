@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { LegendListRef } from "@legendapp/list/react";
 import type { AssistantCitation, MessageId, ScopedThreadRef } from "@t3tools/contracts";
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
@@ -194,8 +196,8 @@ function observeAssistantCitationSource({
             request.onComplete();
             toastManager.add({
               type: "warning",
-              title: "Could not open the cited response",
-              description: "Click the citation to try again.",
+              title: translateMessage(msg("Could not open the cited response")),
+              description: translateMessage(msg("Click the citation to try again.")),
             });
           },
         );
@@ -207,8 +209,10 @@ function observeAssistantCitationSource({
       if (!range) {
         toastManager.add({
           type: "warning",
-          title: "The quoted text has changed",
-          description: "Showing the source response. The saved quote is unchanged.",
+          title: translateMessage(msg("The quoted text has changed")),
+          description: translateMessage(
+            msg("Showing the source response. The saved quote is unchanged."),
+          ),
         });
       }
     }

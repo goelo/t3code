@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import chatgptLogo from "./logos/chatgpt.png";
 import claudeLogo from "./logos/claude.png";
 import geminiLogo from "./logos/gemini.png";
@@ -190,25 +192,25 @@ export function mcpHandoffAction(app: McpApp, mcpUrl: string) {
   switch (handoff.kind) {
     case "open":
       return {
-        label: `Open in ${app.name}`,
+        label: translateMessage(msg("Open in {value0}"), { value0: app.name }),
         link: handoff.link(mcpUrl),
         appLink: null,
         copy: null,
       };
     case "copy-url":
       return {
-        label: `Copy URL and open ${app.name}`,
+        label: translateMessage(msg("Copy URL and open {value0}"), { value0: app.name }),
         link: handoff.link,
         appLink: null,
-        copy: { text: mcpUrl, title: "URL copied" },
+        copy: { text: mcpUrl, title: translateMessage(msg("URL copied")) },
       };
     case "copy-message": {
       const message = handoff.message(mcpUrl);
       return {
-        label: `Copy message and open ${app.name}`,
+        label: translateMessage(msg("Copy message and open {value0}"), { value0: app.name }),
         link: handoff.link,
         appLink: handoff.appLink?.(message) ?? null,
-        copy: { text: message, title: "Message copied" },
+        copy: { text: message, title: translateMessage(msg("Message copied")) },
       };
     }
     case "commands":

@@ -1,3 +1,4 @@
+import { msg } from "gt-react";
 import type { UsageProviderKind } from "@t3tools/contracts";
 
 import { ProviderDriverKind } from "@t3tools/contracts";
@@ -22,7 +23,7 @@ export const PROVIDER_PRESENTATION = {
     driverKind: ProviderDriverKind.make("claudeAgent"),
   },
   grok: {
-    label: "Grok Build",
+    label: msg("Grok Build"),
     color: "color-mix(in oklab, var(--contrast-foreground) 72%, var(--background))",
     driverKind: ProviderDriverKind.make("grok"),
   },
@@ -33,7 +34,7 @@ export const PROVIDER_PRESENTATION = {
     driverKind: ProviderDriverKind.make("opencode"),
   },
   antigravity: {
-    label: "Antigravity",
+    label: msg("Antigravity"),
     color: "#8c7bd1",
     driverKind: ProviderDriverKind.make("antigravity"),
   },
@@ -43,7 +44,7 @@ export const PROVIDER_PRESENTATION = {
     driverKind: ProviderDriverKind.make("pi"),
   },
   muse: {
-    label: "Muse Code",
+    label: msg("Muse Code"),
     color: "#0866ff",
     driverKind: ProviderDriverKind.make("muse"),
   },

@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import { type EnvironmentId, SourceControlProviderKind } from "@t3tools/contracts";
 import { runAtomCommand } from "@t3tools/client-runtime/state/runtime";
 import * as Schema from "effect/Schema";
@@ -42,8 +44,8 @@ function showStarPrompt(environmentId: EnvironmentId) {
       dismiss();
       toastManager.update(id, {
         type: "success",
-        title: "Thanks for the star!",
-        description: "It really helps T3 Code grow.",
+        title: translateMessage(msg("Thanks for the star!")),
+        description: translateMessage(msg("It really helps T3 Code grow.")),
         timeout: 5_000,
         actionProps: undefined,
         data: {},
@@ -57,8 +59,8 @@ function showStarPrompt(environmentId: EnvironmentId) {
     toastManager.update(id, { actionProps: { children: "Open GitHub", onClick: openInBrowser } });
   };
   const id = toastManager.add({
-    title: "Enjoying T3 Code?",
-    description: "Give us a star on GitHub to let us know!",
+    title: translateMessage(msg("Enjoying T3 Code?")),
+    description: translateMessage(msg("Give us a star on GitHub to let us know!")),
     timeout: 0,
     onClose: dismiss,
     actionProps: { children: "Star on GitHub", onClick: () => void starInPlace() },
@@ -123,7 +125,11 @@ async function alreadyStarred(environmentId: EnvironmentId) {
     appAtomRegistry,
     sourceControlEnvironment.checkStarred,
     starInput(environmentId),
-    { label: "check GitHub star", reportFailure: false, reportDefect: false },
+    {
+      label: translateMessage(msg("check GitHub star")),
+      reportFailure: false,
+      reportDefect: false,
+    },
   );
   return result._tag === "Success" ? result.value : undefined;
 }
@@ -133,7 +139,7 @@ async function starRepository(environmentId: EnvironmentId) {
     appAtomRegistry,
     sourceControlEnvironment.star,
     starInput(environmentId),
-    { label: "star on GitHub", reportFailure: false, reportDefect: false },
+    { label: translateMessage(msg("star on GitHub")), reportFailure: false, reportDefect: false },
   );
   return result._tag === "Success" && result.value;
 }

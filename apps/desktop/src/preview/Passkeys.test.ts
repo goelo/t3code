@@ -1,3 +1,4 @@
+import { setDesktopLanguage } from "../i18n.ts";
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -26,6 +27,7 @@ import * as PreviewPasskeys from "./Passkeys.ts";
 
 const layerFor = (packageJson: object, isPackaged = true) =>
   PreviewPasskeys.layer.pipe(
+    Layer.provide(Layer.effectDiscard(Effect.sync(() => setDesktopLanguage("en", ["en-US"])))),
     Layer.provide(
       Layer.succeed(
         DesktopEnvironment.DesktopEnvironment,

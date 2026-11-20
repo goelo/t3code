@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type {
   ServerProvider,
   ServerProviderVersionAdvisory,
@@ -47,20 +49,22 @@ export function getProviderStatusKey(provider: ServerProvider | undefined): Prov
 export function getProviderSummary(provider: ServerProvider | undefined) {
   if (!provider) {
     return {
-      headline: "Checking provider status",
-      detail: "Waiting for the server to report installation and authentication details.",
+      headline: translateMessage(msg("Checking provider status")),
+      detail: translateMessage(
+        msg("Waiting for the server to report installation and authentication details."),
+      ),
     };
   }
   if (!provider.enabled || provider.status === "disabled") {
     return {
-      headline: "Disabled",
+      headline: translateMessage(msg("Disabled")),
       detail:
         provider.message ?? "This provider is installed but disabled for new sessions in T3 Code.",
     };
   }
   if (!provider.installed) {
     return {
-      headline: "Not found",
+      headline: translateMessage(msg("Not found")),
       detail: provider.message ?? "CLI not detected on PATH.",
     };
   }
@@ -73,20 +77,20 @@ export function getProviderSummary(provider: ServerProvider | undefined) {
   }
   if (isAntigravitySignInUnchecked(provider)) {
     return {
-      headline: "Installed · Sign-in not checked",
+      headline: translateMessage(msg("Installed · Sign-in not checked")),
       detail: provider.message ?? null,
     };
   }
   if (provider.status === "warning") {
     return {
-      headline: "Needs attention",
+      headline: translateMessage(msg("Needs attention")),
       detail:
         provider.message ?? "The provider is installed, but the server could not fully verify it.",
     };
   }
   if (provider.status === "error") {
     return {
-      headline: "Unavailable",
+      headline: translateMessage(msg("Unavailable")),
       detail: provider.message ?? "The provider failed its startup checks.",
     };
   }
@@ -98,7 +102,7 @@ export function getProviderSummary(provider: ServerProvider | undefined) {
     };
   }
   return {
-    headline: "Available",
+    headline: translateMessage(msg("Available")),
     detail: provider.message ?? null,
   };
 }
@@ -114,9 +118,9 @@ export function getProviderVersionLabel(version: string | null | undefined) {
 }
 
 const COMPATIBILITY_TITLES = {
-  graceful: "Limited support",
-  unsupported: "Unsupported version",
-  broken: "Known broken version",
+  graceful: msg("Limited support"),
+  unsupported: msg("Unsupported version"),
+  broken: msg("Known broken version"),
 } as const;
 
 export function getProviderVersionAdvisoryPresentation(

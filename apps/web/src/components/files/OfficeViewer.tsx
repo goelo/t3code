@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { useGT, T, msg } from "gt-react";
 /* oxlint-disable react/no-array-index-key -- Spreadsheet rows and columns retain their source positions. */
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type { OfficePreviewKind } from "@t3tools/shared/filePreview";
@@ -68,6 +70,7 @@ function ExtendedOfficeViewer(props: {
   readonly kind: OfficePreviewKind;
   readonly sizeBytes?: number;
 }) {
+  const gt = useGT();
   const [error, setError] = useState<string | null>(null);
   const [sheetPages, setSheetPages] = useState(new Map<string, string[][]>());
   const pendingPages = useRef(new Set<string>());
@@ -90,7 +93,7 @@ function ExtendedOfficeViewer(props: {
     const controller = new AbortController();
     if ((props.sizeBytes ?? 0) > OFFICE_PREVIEW_MAX_BYTES) {
       // oxlint-disable-next-line react/set-state-in-effect -- The file metadata can reject the preview before loading bytes or engines.
-      setError("Preview limited to files under 50 MB.");
+      setError(translateMessage(msg("Preview limited to files under 50 MB.")));
       return;
     }
     const worker = new Worker(new URL("./officePreview.worker.ts", import.meta.url), {
@@ -160,9 +163,12 @@ function ExtendedOfficeViewer(props: {
         role="alert"
         className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-6 text-center"
       >
-        <p className="text-sm font-medium">No preview for this file</p>
+        <p className="text-sm font-medium">
+          <T>No preview for this file</T>
+        </p>
         <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-          {error} Save it or open it in another app.
+          {error}
+          <T> Save it or open it in another app.</T>
         </p>
       </div>
     );
@@ -185,7 +191,7 @@ function ExtendedOfficeViewer(props: {
       {count > 0 ? (
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/60 px-3 text-xs">
           <FileSurfaceAction
-            label={`Previous ${navigation}`}
+            label={gt("Previous {value0}", { value0: navigation })}
             disabled={page === 0}
             onPress={() => selectPage(page - 1)}
           >
@@ -199,7 +205,7 @@ function ExtendedOfficeViewer(props: {
                   if (value !== null) selectPage(value);
                 }}
               >
-                <SelectTrigger aria-label="Sheet" size="xs">
+                <SelectTrigger aria-label={gt("Sheet")} size="xs">
                   <SelectValue>{sheet?.name}</SelectValue>
                 </SelectTrigger>
                 <SelectPopup>
@@ -219,7 +225,7 @@ function ExtendedOfficeViewer(props: {
                   if (value !== null) selectPage(value);
                 }}
               >
-                <SelectTrigger aria-label="Chapter" size="xs">
+                <SelectTrigger aria-label={gt("Chapter")} size="xs">
                   <SelectValue>{documentPage?.title}</SelectValue>
                 </SelectTrigger>
                 <SelectPopup>
@@ -233,11 +239,15 @@ function ExtendedOfficeViewer(props: {
             </div>
           ) : (
             <span className="flex-1 text-center tabular-nums" aria-live="polite">
-              {navigation === "slide" ? "Slide" : "Page"} {page + 1} of {count}
+              {gt("{value0} {value1} of {value2}", {
+                value0: navigation === "slide" ? gt("Slide") : gt("Page"),
+                value1: page + 1,
+                value2: count,
+              })}
             </span>
           )}
           <FileSurfaceAction
-            label={`Next ${navigation}`}
+            label={gt("Next {value0}", { value0: navigation })}
             disabled={page + 1 === count}
             onPress={() => selectPage(page + 1)}
           >
@@ -250,11 +260,16 @@ function ExtendedOfficeViewer(props: {
           className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-1 border-b border-border/60 px-3 py-2 text-xs text-muted-foreground tabular-nums"
           role="status"
         >
-          Sheet {page + 1} of {count} · {sheet.rowCount.toLocaleString()} row
-          {sheet.rowCount === 1 ? "" : "s"} · {sheet.columns.toLocaleString()} column
+          <T>Sheet </T>
+          {page + 1}
+          <T> of </T>
+          {count} · {sheet.rowCount.toLocaleString()}
+          <T> row</T>
+          {sheet.rowCount === 1 ? "" : "s"} · {sheet.columns.toLocaleString()}
+          <T> column</T>
           {sheet.columns === 1 ? "" : "s"}
           {fileSize !== undefined
-            ? ` · ${fileSize === 0 ? "0 bytes" : formatAttachmentSize(fileSize)}`
+            ? ` · ${fileSize === 0 ? gt("0 bytes") : formatAttachmentSize(fileSize)}`
             : ""}
         </div>
       ) : null}
@@ -262,7 +277,7 @@ function ExtendedOfficeViewer(props: {
         <>
           {props.kind !== "epub" ? (
             <FileSurfaceNotice>
-              Text and images. Layout and embedded objects may differ from the original.
+              <T>Text and images. Layout and embedded objects may differ from the original.</T>
             </FileSurfaceNotice>
           ) : null}
           <Suspense fallback={<FileSurfaceLoading />}>
@@ -276,15 +291,18 @@ function ExtendedOfficeViewer(props: {
       ) : sheet ? (
         <>
           <FileSurfaceNotice>
-            Cell values only. Charts, images, and formatting are not shown.
-            {sheet.truncated
-              ? props.kind === "ods"
-                ? " Limited to 500 rows and 50 columns."
-                : " Preview limited to 250,000 rows, 1,024 columns, and bounded cell text."
-              : ""}
+            {gt("Cell values only. Charts, images, and formatting are not shown.{value0}", {
+              value0: sheet.truncated
+                ? props.kind === "ods"
+                  ? gt(" Limited to 500 rows and 50 columns.")
+                  : gt(" Preview limited to 250,000 rows, 1,024 columns, and bounded cell text.")
+                : "",
+            })}
           </FileSurfaceNotice>
           {sheet.rowCount === 0 ? (
-            <p className="p-6 text-xs text-muted-foreground">This sheet is empty.</p>
+            <p className="p-6 text-xs text-muted-foreground">
+              <T>This sheet is empty.</T>
+            </p>
           ) : (
             <VirtualTablePreview
               key={page}

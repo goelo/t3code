@@ -1,3 +1,6 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import { parsePullRequestAnchor } from "@t3tools/shared/pullRequestAnchor";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
@@ -213,7 +216,7 @@ export function useOpenChangeRequestLink(
             const toastId = toastManager.add(
               stackedThreadToast({
                 type: "info",
-                title: "This commit is not in the thread's workspace",
+                title: translateMessage(msg("This commit is not in the thread's workspace")),
                 actionProps: {
                   children: "Open link",
                   onClick: () => {
@@ -260,7 +263,7 @@ export function useOpenPrLink(threadRef?: ScopedThreadRef) {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Unable to open pull request link",
+          title: translateMessage(msg("Unable to open pull request link")),
           description: error instanceof Error ? error.message : "An error occurred.",
         }),
       );

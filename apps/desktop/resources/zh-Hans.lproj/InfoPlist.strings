@@ -1,0 +1,7 @@
+"NSLocalNetworkUsageDescription" = "T3 Code 需要连接局域网设备，以访问远程环境并执行终端和编程助手的命令。";
+"NSCalendarsUsageDescription" = "你在 T3 Code 中执行的命令可能需要访问日历。";
+"NSCalendarsFullAccessUsageDescription" = "你在 T3 Code 中执行的命令可能需要读取和修改日历事件。";
+"NSCalendarsWriteOnlyAccessUsageDescription" = "你在 T3 Code 中执行的命令可能需要向日历添加事件。";
+"NSScreenCaptureUsageDescription" = "使用窗口截图快捷键时，T3 Code 需要捕获当前窗口。";
+"NSCameraUsageDescription" = "T3 Code 允许终端和编程助手执行的命令使用摄像头。";
+"NSMicrophoneUsageDescription" = "T3 Code 允许终端和编程助手执行的命令使用麦克风。";

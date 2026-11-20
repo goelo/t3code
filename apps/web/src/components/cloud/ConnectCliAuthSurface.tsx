@@ -1,3 +1,4 @@
+import { msg, useGT, T } from "gt-react";
 import { useAuth, useClerk } from "@clerk/react";
 import { readConnectAuthorizeRequest } from "@t3tools/shared/connectAuth";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -13,12 +14,14 @@ import { Button } from "../ui/button";
 
 const invalidLinkMessage = {
   context: "Authorization request",
-  title: "This connect link is incomplete",
-  description:
+  title: msg("This connect link is incomplete"),
+  description: msg(
     "The link is missing its authorization request. Re-run `t3 connect` in your terminal and open the freshly printed URL.",
+  ),
 } as const;
 
 export function ConnectCliAuthorizeSurface() {
+  const gt = useGT();
   const [request] = useState(() => readConnectAuthorizeRequest(new URL(window.location.href)));
   const clerk = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
@@ -70,17 +73,17 @@ export function ConnectCliAuthorizeSurface() {
     <StandalonePage>
       <StandalonePageHeader
         context="Browser authorization"
-        title="Connecting your terminal"
+        title={gt("Connecting your terminal")}
         description={
           isSignedIn
-            ? "Redirecting to authorize T3 Connect for your CLI…"
-            : "Sign in to continue authorizing T3 Connect for your CLI."
+            ? gt("Redirecting to authorize T3 Connect for your CLI…")
+            : gt("Sign in to continue authorizing T3 Connect for your CLI.")
         }
       />
       {isLoaded && !isSignedIn ? (
         <div className="mt-6">
           <Button type="button" onClick={openSignIn}>
-            Sign in
+            <T>Sign in</T>
           </Button>
         </div>
       ) : null}

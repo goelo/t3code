@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { AnyRouter } from "@tanstack/react-router";
 
 import {
@@ -73,7 +75,9 @@ export function installCommandPaletteCommands(
         }
         toastManager.add({
           id: "appearance-cycle",
-          title: `Appearance: ${APPEARANCE_OPTIONS.find((option) => option.mode === nextMode)?.label}`,
+          title: translateMessage(msg("Appearance: {value0}"), {
+            value0: APPEARANCE_OPTIONS.find((option) => option.mode === nextMode)?.label,
+          }),
           timeout: 1500,
         });
       },

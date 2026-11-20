@@ -1,3 +1,4 @@
+import { T, useGT, msg } from "gt-react";
 import { useState } from "react";
 
 import {
@@ -12,13 +13,14 @@ import { SettingsRow } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
 
 const FAILURE_TITLES = {
-  install: "Could not install t3",
-  uninstall: "Could not remove t3",
-  addToPath: "Could not add t3 to PATH",
+  install: msg("Could not install t3"),
+  uninstall: msg("Could not remove t3"),
+  addToPath: msg("Could not add t3 to PATH"),
 } as const;
 
 /** The desktop `t3` command's state, and its actions with a toast on failure. */
 export function useDesktopCliCommand() {
+  const gt = useGT();
   const bridge = getDesktopCliCommandBridge();
   const query = useEnvironmentQuery(bridge ? desktopCliCommandStateAtom : null);
   const [pending, setPending] = useState(false);
@@ -33,7 +35,7 @@ export function useDesktopCliCommand() {
           stackedThreadToast({
             type: "error",
             title: FAILURE_TITLES[action],
-            description: error instanceof Error ? error.message : "Something went wrong.",
+            description: error instanceof Error ? error.message : gt("Something went wrong."),
           }),
         );
       })
@@ -48,19 +50,30 @@ export function useDesktopCliCommand() {
 }
 
 export function CliCommandSettingsRow() {
+  const gt = useGT();
   const { state, busy, run } = useDesktopCliCommand();
 
   if (!state?.supported) return null;
   const installed = state.installedPath !== null;
   const description = state.shadowedBy
-    ? `Another t3 at ${state.shadowedBy} runs first in a new terminal. Remove it to use T3 Code's.`
+    ? gt("Another t3 at {value0} runs first in a new terminal. Remove it to use T3 Code's.", {
+        value0: state.shadowedBy,
+      })
     : !installed
-      ? "Run T3 Code's CLI as `t3` from any terminal."
+      ? gt("Run T3 Code's CLI as `t3` from any terminal.")
       : state.onPath
-        ? `Installed at ${state.installedPath}. Open a new terminal to use it.`
+        ? gt("Installed at {value0}. Open a new terminal to use it.", {
+            value0: state.installedPath,
+          })
         : state.pathSetup?.added
-          ? `Installed at ${state.installedPath} and added to PATH in ${state.pathSetup.file}. Open a new terminal to use it.`
-          : `Installed at ${state.installedPath}, which is not on your PATH yet.${state.pathSetup ? "" : " Add its folder to your PATH to run `t3`."}`;
+          ? gt(
+              "Installed at {value0} and added to PATH in {value1}. Open a new terminal to use it.",
+              { value0: state.installedPath, value1: state.pathSetup.file },
+            )
+          : gt("Installed at {value0}, which is not on your PATH yet.{value1}", {
+              value0: state.installedPath,
+              value1: state.pathSetup ? "" : gt(" Add its folder to your PATH to run `t3`."),
+            });
 
   return (
     <SettingsRow
@@ -70,7 +83,7 @@ export function CliCommandSettingsRow() {
         <div className="flex gap-2">
           {state.pathSetup && !state.pathSetup.added ? (
             <Button size="sm" variant="outline" disabled={busy} onClick={() => run("addToPath")}>
-              Add to PATH
+              <T>Add to PATH</T>
             </Button>
           ) : null}
           <Button
@@ -79,7 +92,7 @@ export function CliCommandSettingsRow() {
             disabled={busy || (!installed && Boolean(state.shadowedBy))}
             onClick={() => run(installed ? "uninstall" : "install")}
           >
-            {installed ? "Remove" : "Install"}
+            {installed ? gt("Remove") : gt("Install")}
           </Button>
         </div>
       }

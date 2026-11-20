@@ -1,3 +1,5 @@
+import { msg } from "gt-react";
+import { translateMessage } from "../i18n/translateMessage";
 import type { DesktopSnapShotState } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import { Atom, type AtomRegistry } from "effect/reactivity";
@@ -10,7 +12,10 @@ export interface SnapShotSetupError {
 }
 
 export function snapShotSetupError(title: string, error: unknown): SnapShotSetupError {
-  return { title, message: error instanceof Error ? error.message : "Try again." };
+  return {
+    title,
+    message: error instanceof Error ? error.message : translateMessage(msg("Try again.")),
+  };
 }
 
 export interface DesktopSnapShotLoad {
@@ -40,7 +45,10 @@ export const desktopSnapShotAtom = Atom.writable(
       void refreshDesktopSnapShotState(get.registry, (error) => {
         get.setSelf({
           ...Option.getOrElse(get.self<DesktopSnapShotLoad>(), () => EMPTY_LOAD),
-          refreshError: snapShotSetupError("Couldn't check capture setup", error),
+          refreshError: snapShotSetupError(
+            translateMessage(msg("Couldn't check capture setup")),
+            error,
+          ),
         });
       });
     window.addEventListener("focus", refresh);

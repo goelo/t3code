@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import type {
   KeybindingCommand,
   ProjectId,
@@ -79,7 +82,7 @@ export function useProjectScriptEditing(input: {
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthSettingsWriteScope,
-            message: "This connection cannot change keyboard shortcuts.",
+            message: translateMessage(msg("This connection cannot change keyboard shortcuts.")),
           }),
         ),
       );
@@ -251,14 +254,16 @@ export function useProjectScriptEditing(input: {
     if (result._tag === "Success") {
       toastManager.add({
         type: "success",
-        title: `Deleted action "${deletedName ?? "Unknown"}"`,
+        title: translateMessage(msg('Deleted action "{value0}"'), {
+          value0: deletedName ?? translateMessage(msg("Unknown")),
+        }),
       });
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Could not delete action",
+          title: translateMessage(msg("Could not delete action")),
           description: error instanceof Error ? error.message : "An unexpected error occurred.",
         }),
       );

@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import {
   matchComposerEnvironmentItems,
   matchComposerThreadItems,
@@ -236,7 +239,7 @@ export function useComposerMenuItems({
           type: "slash-command",
           command: "model",
           label: "/model",
-          description: "Switch response model for this thread",
+          description: translateMessage(msg("Switch response model for this thread")),
         },
         ...(sideChatAvailable
           ? ([
@@ -263,7 +266,9 @@ export function useComposerMenuItems({
                 type: "slash-command",
                 command: "clear",
                 label: "/clear",
-                description: "Start a fresh session; earlier messages stay visible",
+                description: translateMessage(
+                  msg("Start a fresh session; earlier messages stay visible"),
+                ),
               },
             ] as const)
           : []),

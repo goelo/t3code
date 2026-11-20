@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { T, msg } from "gt-react";
 import type { EnvironmentId, UsageLimitsReport } from "@t3tools/contracts";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
 import { limitsNotice } from "@t3tools/shared/usageLimits";
@@ -61,7 +63,7 @@ export function usageLimitsBannerItem(
     id,
     variant: "info",
     icon: <GaugeIcon />,
-    title: "Usage limits",
+    title: translateMessage(msg("Usage limits")),
     description: summary,
     dismissLabel: "Dismiss usage limits",
     onDismiss,
@@ -90,11 +92,19 @@ export function modelFallbackBannerItem({
     id: "fallback-model",
     variant: "info",
     icon: <GaugeIcon />,
-    title: `Using ${fallbackModelName}`,
-    description: `${defaultProviderName} is out of usage${resetsAt ? ` · resets ${formatUpcomingTimestamp(resetsAt, timestampFormat)}` : ""}`,
+    title: translateMessage(msg("Using {value0}"), { value0: fallbackModelName }),
+    description: translateMessage(msg("{value0} is out of usage{value1}"), {
+      value0: defaultProviderName,
+      value1: resetsAt
+        ? translateMessage(msg(" · resets {value0}"), {
+            value0: formatUpcomingTimestamp(resetsAt, timestampFormat),
+          })
+        : "",
+    }),
     actions: (
       <Button size="xs" variant="ghost" onClick={onUseDefault}>
-        Use {defaultModelName}
+        <T>Use </T>
+        {defaultModelName}
       </Button>
     ),
     dismissLabel: "Dismiss fallback model notice",
@@ -144,7 +154,7 @@ function UsageLimitsBannerBody({
                   className="self-start"
                   onClick={() => void ensureLocalApi().shell.openExternal(externalUsage.url)}
                 >
-                  Manage usage
+                  <T>Manage usage</T>
                 </Button>
               ) : null}
               {resetCreditInput && account.limits.resetCredits ? (

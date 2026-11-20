@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import { serverUpdateStateAtom } from "@t3tools/client-runtime/state/server";
 import { EnvironmentId, type ServerConfig } from "@t3tools/contracts";
@@ -359,8 +361,11 @@ export function startDesktopUpdateLaunchNotice(): () => void {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Update did not apply",
-          description: `T3 Code is still on ${APP_VERSION}. Install ${notAppliedVersion} again from the update button.`,
+          title: translateMessage(msg("Update did not apply")),
+          description: translateMessage(
+            msg("T3 Code is still on {value0}. Install {value1} again from the update button."),
+            { value0: APP_VERSION, value1: notAppliedVersion },
+          ),
         }),
       );
     },

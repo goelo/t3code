@@ -234,6 +234,7 @@ describe("DesktopClientSettings", () => {
         assert.isTrue(Option.isSome(persisted));
         if (Option.isSome(persisted)) {
           assert.equal(persisted.value.timestampFormat, "24-hour");
+          assert.equal(persisted.value.language, "zh");
         }
       }),
     ),
@@ -259,9 +260,32 @@ describe("DesktopClientSettings", () => {
         assert.isTrue(Option.isSome(persisted));
         if (Option.isSome(persisted)) {
           assert.equal(persisted.value.timestampFormat, "12-hour");
+          assert.equal(persisted.value.language, "zh");
         }
       }),
     ),
+  );
+
+  it.effect.each(["en", "zh", "system"] as const)(
+    "preserves an explicit $value language preference",
+    (language) =>
+      withClientSettings(
+        Effect.gen(function* () {
+          const environment = yield* DesktopEnvironment.DesktopEnvironment;
+          const fs = yield* FileSystem.FileSystem;
+          const settings = yield* DesktopClientSettings.DesktopClientSettings;
+          yield* fs.makeDirectory(environment.stateDir, { recursive: true });
+          const raw = JSON.stringify({ language, timestampFormat: "12-hour" });
+          yield* fs.writeFileString(environment.clientSettingsPath, raw);
+          const persisted = yield* settings.get;
+          assert.isTrue(Option.isSome(persisted));
+          if (Option.isSome(persisted)) {
+            assert.equal(persisted.value.language, language);
+            assert.equal(persisted.value.timestampFormat, "12-hour");
+          }
+          assert.equal(yield* fs.readFileString(environment.clientSettingsPath), raw);
+        }),
+      ),
   );
 
   it.effect.each([

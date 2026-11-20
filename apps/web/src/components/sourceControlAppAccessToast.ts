@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { appSignInTargetForRemote } from "@t3tools/client-runtime/source-control-clients";
 import { runAtomCommand } from "@t3tools/client-runtime/state/runtime";
@@ -19,14 +21,22 @@ export async function suggestAppAccessForRemote(
     appAtomRegistry,
     sourceControlEnvironment.checkAppAccess,
     { environmentId, input: target.input },
-    { label: "check app access", reportFailure: false, reportDefect: false },
+    { label: translateMessage(msg("check app access")), reportFailure: false, reportDefect: false },
   );
   if (result._tag !== "Success" || result.value.status !== "not-covered") return;
   const owner = target.input.repository.split("/")[0] ?? target.input.repository;
   const id = toastManager.add({
     type: "info",
-    title: `Give ${target.appSignIn.appName} access to ${owner}`,
-    description: `It isn't installed there, so GitHub requests for ${target.input.repository} use your own login and its lower rate limit.`,
+    title: translateMessage(msg("Give {value0} access to {value1}"), {
+      value0: target.appSignIn.appName,
+      value1: owner,
+    }),
+    description: translateMessage(
+      msg(
+        "It isn't installed there, so GitHub requests for {value0} use your own login and its lower rate limit.",
+      ),
+      { value0: target.input.repository },
+    ),
     actionProps: {
       children: "Install",
       onClick: () => {

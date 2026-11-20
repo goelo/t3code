@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import { AuthProvidersManageScope, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
@@ -23,6 +24,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 // `refreshModels` always drops the server's hour-long latest-version cache. `modelCatalogOnly`
 // drops it only when the model manifest changed.
 export function useCheckProviderUpdates() {
+  const gt = useGT();
   const { environments } = useEnvironments();
   const manageableIds = useEnvironmentsWithScope(environments, AuthProvidersManageScope);
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
@@ -50,7 +52,7 @@ export function useCheckProviderUpdates() {
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Could not check provider updates",
+        title: gt("Could not check provider updates"),
         description: <span className="whitespace-pre-line">{lines.join("\n")}</span>,
       }),
     );
@@ -121,6 +123,7 @@ export function useProviderUpdates() {
 }
 
 export function ProviderUpdatesAction() {
+  const gt = useGT();
   const { machines, updateAll } = useProviderUpdates();
   const pending = useRef(false);
   const [isPending, setIsPending] = useState(false);
@@ -147,7 +150,7 @@ export function ProviderUpdatesAction() {
             disabled={isPending}
             onClick={() => void handleUpdate()}
           >
-            {isPending ? "Updating…" : "Update all"}
+            {isPending ? gt("Updating…") : gt("Update all")}
           </Button>
         }
       />

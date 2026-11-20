@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import type {
   GitRunStackedActionResult,
   GitStackedAction,
@@ -137,7 +139,7 @@ export function buildMenuItems(
 
   const commitItem: GitActionMenuItem = {
     id: "commit",
-    label: "Commit",
+    label: translateMessage(msg("Commit")),
     disabled: !canCommit,
     icon: "commit",
     kind: "open_dialog",
@@ -150,7 +152,7 @@ export function buildMenuItems(
 
   const pushItem: GitActionMenuItem = {
     id: "push",
-    label: "Push",
+    label: translateMessage(msg("Push")),
     disabled: !canPush,
     icon: "push",
     kind: "open_dialog",
@@ -166,7 +168,7 @@ export function buildMenuItems(
     pushItem,
     {
       id: "pr",
-      label: `Create ${terminology.shortLabel}`,
+      label: translateMessage(msg("Create {value0}"), { value0: terminology.shortLabel }),
       disabled: !canCreatePr,
       icon: "pr",
       kind: "open_dialog",
@@ -195,15 +197,20 @@ export function resolveQuickAction(
   hasPrimaryRemote = true,
 ): GitQuickAction {
   if (isBusy) {
-    return { label: "Commit", disabled: true, kind: "show_hint", hint: "Git action in progress." };
+    return {
+      label: translateMessage(msg("Commit")),
+      disabled: true,
+      kind: "show_hint",
+      hint: translateMessage(msg("Git action in progress.")),
+    };
   }
 
   if (!gitStatus) {
     return {
-      label: "Commit",
+      label: translateMessage(msg("Commit")),
       disabled: true,
       kind: "show_hint",
-      hint: "Git status is unavailable.",
+      hint: translateMessage(msg("Git status is unavailable.")),
     };
   }
 
@@ -218,22 +225,37 @@ export function resolveQuickAction(
 
   if (!hasBranch) {
     return {
-      label: "Commit",
+      label: translateMessage(msg("Commit")),
       disabled: true,
       kind: "show_hint",
-      hint: `Create and checkout a ref before pushing or opening a ${terminology.singular}.`,
+      hint: translateMessage(
+        msg("Create and checkout a ref before pushing or opening a {value0}."),
+        {
+          value0: terminology.singular,
+        },
+      ),
     };
   }
 
   if (hasChanges) {
     if (isBehind || (!gitStatus.hasUpstream && !hasPrimaryRemote)) {
-      return { label: "Commit", disabled: false, kind: "run_action", action: "commit" };
+      return {
+        label: translateMessage(msg("Commit")),
+        disabled: false,
+        kind: "run_action",
+        action: "commit",
+      };
     }
     if (hasOpenPr || isDefaultRef) {
-      return { label: "Commit & push", disabled: false, kind: "run_action", action: "commit_push" };
+      return {
+        label: translateMessage(msg("Commit & push")),
+        disabled: false,
+        kind: "run_action",
+        action: "commit_push",
+      };
     }
     return {
-      label: `Commit, push & ${terminology.shortLabel}`,
+      label: translateMessage(msg("Commit, push & {value0}"), { value0: terminology.shortLabel }),
       disabled: false,
       kind: "run_action",
       action: "commit_push_pr",
@@ -243,7 +265,7 @@ export function resolveQuickAction(
   if (!gitStatus.hasUpstream) {
     if (!hasPrimaryRemote) {
       return {
-        label: "Publish repository",
+        label: translateMessage(msg("Publish repository")),
         disabled: false,
         kind: "open_publish",
       };
@@ -251,29 +273,29 @@ export function resolveQuickAction(
     if (!isAhead) {
       if (hasOpenPr) {
         return {
-          label: "Commit",
+          label: translateMessage(msg("Commit")),
           disabled: true,
           kind: "show_hint",
-          hint: "Branch is up to date. No action needed.",
+          hint: translateMessage(msg("Branch is up to date. No action needed.")),
         };
       }
       return {
-        label: "Push",
+        label: translateMessage(msg("Push")),
         disabled: true,
         kind: "show_hint",
-        hint: "No local commits to push.",
+        hint: translateMessage(msg("No local commits to push.")),
       };
     }
     if (hasOpenPr || isDefaultRef) {
       return {
-        label: "Push",
+        label: translateMessage(msg("Push")),
         disabled: false,
         kind: "run_action",
         action: isDefaultRef ? "commit_push" : "push",
       };
     }
     return {
-      label: `Push & create ${terminology.shortLabel}`,
+      label: translateMessage(msg("Push & create {value0}"), { value0: terminology.shortLabel }),
       disabled: false,
       kind: "run_action",
       action: "create_pr",
@@ -282,16 +304,16 @@ export function resolveQuickAction(
 
   if (isDiverged) {
     return {
-      label: "Sync ref",
+      label: translateMessage(msg("Sync ref")),
       disabled: true,
       kind: "show_hint",
-      hint: "Branch has diverged from upstream. Rebase/merge first.",
+      hint: translateMessage(msg("Branch has diverged from upstream. Rebase/merge first.")),
     };
   }
 
   if (isBehind) {
     return {
-      label: "Pull",
+      label: translateMessage(msg("Pull")),
       disabled: false,
       kind: "run_pull",
     };
@@ -300,14 +322,14 @@ export function resolveQuickAction(
   if (isAhead) {
     if (hasOpenPr || isDefaultRef) {
       return {
-        label: "Push",
+        label: translateMessage(msg("Push")),
         disabled: false,
         kind: "run_action",
         action: isDefaultRef ? "commit_push" : "push",
       };
     }
     return {
-      label: `Push & create ${terminology.shortLabel}`,
+      label: translateMessage(msg("Push & create {value0}"), { value0: terminology.shortLabel }),
       disabled: false,
       kind: "run_action",
       action: "create_pr",
@@ -316,16 +338,16 @@ export function resolveQuickAction(
 
   if (hasOpenPr && gitStatus.hasUpstream) {
     return {
-      label: "Commit",
+      label: translateMessage(msg("Commit")),
       disabled: true,
       kind: "show_hint",
-      hint: "Branch is up to date. No action needed.",
+      hint: translateMessage(msg("Branch is up to date. No action needed.")),
     };
   }
 
   if (hasDefaultBranchDelta && !isDefaultRef) {
     return {
-      label: `Create ${terminology.shortLabel}`,
+      label: translateMessage(msg("Create {value0}"), { value0: terminology.shortLabel }),
       disabled: false,
       kind: "run_action",
       action: "create_pr",
@@ -333,10 +355,10 @@ export function resolveQuickAction(
   }
 
   return {
-    label: "Commit",
+    label: translateMessage(msg("Commit")),
     disabled: true,
     kind: "show_hint",
-    hint: "Branch is up to date. No action needed.",
+    hint: translateMessage(msg("Branch is up to date. No action needed.")),
   };
 }
 
@@ -353,28 +375,48 @@ export function resolveDefaultBranchActionDialogCopy(input: {
   if (input.action === "push" || input.action === "commit_push") {
     if (input.includesCommit) {
       return {
-        title: "Commit & push to default ref?",
-        description: `This action will commit and push changes${suffix}`,
+        title: translateMessage(msg("Commit & push to default ref?")),
+        description: translateMessage(msg("This action will commit and push changes{value0}"), {
+          value0: suffix,
+        }),
         continueLabel: `Commit & push to ${branchLabel}`,
       };
     }
     return {
-      title: "Push to default ref?",
-      description: `This action will push local commits${suffix}`,
+      title: translateMessage(msg("Push to default ref?")),
+      description: translateMessage(msg("This action will push local commits{value0}"), {
+        value0: suffix,
+      }),
       continueLabel: `Push to ${branchLabel}`,
     };
   }
 
   if (input.includesCommit) {
     return {
-      title: `Commit, push & create ${terminology.shortLabel} from default ref?`,
-      description: `This action will commit, push, and create a ${terminology.singular}${suffix}`,
+      title: translateMessage(msg("Commit, push & create {value0} from default ref?"), {
+        value0: terminology.shortLabel,
+      }),
+      description: translateMessage(
+        msg("This action will commit, push, and create a {value0}{value1}"),
+        {
+          value0: terminology.singular,
+          value1: suffix,
+        },
+      ),
       continueLabel: `Commit, push & create ${terminology.shortLabel}`,
     };
   }
   return {
-    title: `Push & create ${terminology.shortLabel} from default ref?`,
-    description: `This action will push local commits and create a ${terminology.singular}${suffix}`,
+    title: translateMessage(msg("Push & create {value0} from default ref?"), {
+      value0: terminology.shortLabel,
+    }),
+    description: translateMessage(
+      msg("This action will push local commits and create a {value0}{value1}"),
+      {
+        value0: terminology.singular,
+        value1: suffix,
+      },
+    ),
     continueLabel: `Push & create ${terminology.shortLabel}`,
   };
 }

@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { ProviderDriverKind, ProviderInstanceId } from "@t3tools/contracts";
 import {
   resolveSelectableProviderInstanceEntry,
@@ -36,7 +38,9 @@ export function hasAvailableCompactionProvider(input: {
 
 export function formatContextWindowCompactionMessage(autoCompactThreshold?: number | null): string {
   if (typeof autoCompactThreshold === "number" && autoCompactThreshold > 0) {
-    return `Compacts automatically at about ${autoCompactThreshold.toLocaleString("en-US")} tokens.`;
+    return translateMessage(msg("Compacts automatically at about {value0} tokens."), {
+      value0: autoCompactThreshold.toLocaleString("en-US"),
+    });
   }
-  return "Context compacts automatically when needed.";
+  return translateMessage(msg("Context compacts automatically when needed."));
 }

@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { msg } from "gt-react";
 import {
   isModifierPairShortcut,
   snapShotModifierPairLabel,
@@ -63,7 +65,8 @@ function modifierKeyLabel(modifier: SnapShotModifier, platform: string): string 
     if (modifier === "control") return "⌃";
     return "⌥";
   }
-  if (modifier === "meta") return isWindowsPlatform(platform) ? "⊞" : "Super";
+  if (modifier === "meta")
+    return isWindowsPlatform(platform) ? "⊞" : translateMessage(msg("Super"));
   return modifier === "control" ? "Ctrl" : "Alt";
 }
 

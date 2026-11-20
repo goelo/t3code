@@ -1,3 +1,4 @@
+import { useGT, T } from "gt-react";
 import type { EnvironmentSpeechStatus } from "@t3tools/contracts";
 import { effectiveSpeechLanguage } from "@t3tools/shared/speech";
 import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
@@ -12,6 +13,7 @@ type ModelLanguages = Pick<
 >;
 
 export function SpeechLanguageSelect({ model }: { readonly model: ModelLanguages | null }) {
+  const gt = useGT();
   const preference = useClientSettings((settings) => settings.speechLanguage);
   const languages = model?.languages ?? [];
   const resolved = model
@@ -23,12 +25,12 @@ export function SpeechLanguageSelect({ model }: { readonly model: ModelLanguages
   const effectiveLabel = resolved === "auto" ? "Auto-detect" : languageLabel(resolved);
   const unavailable =
     preference !== "auto" && preference !== resolved
-      ? `${languageLabel(preference)} unavailable`
+      ? gt("{value0} unavailable", { value0: languageLabel(preference) })
       : null;
   const label = unavailable
     ? `${effectiveLabel} (${unavailable})`
     : preference === "auto" && resolved !== "auto"
-      ? `Auto (${effectiveLabel})`
+      ? gt("Auto ({value0})", { value0: effectiveLabel })
       : effectiveLabel;
   return (
     <Select
@@ -38,11 +40,13 @@ export function SpeechLanguageSelect({ model }: { readonly model: ModelLanguages
         if (value) void updateClientSettings({ speechLanguage: value });
       }}
     >
-      <SelectTrigger size="sm" aria-label="Transcription language" className="max-w-64">
+      <SelectTrigger size="sm" aria-label={gt("Transcription language")} className="max-w-64">
         <SelectValue>{label}</SelectValue>
       </SelectTrigger>
       <SelectPopup align="end" alignItemWithTrigger={false}>
-        <SelectItem value="auto">Auto</SelectItem>
+        <SelectItem value="auto">
+          <T>Auto</T>
+        </SelectItem>
         {unavailable ? (
           <SelectItem value={preference} disabled>
             {unavailable}

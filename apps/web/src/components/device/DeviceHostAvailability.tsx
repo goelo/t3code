@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import type { DevicePlatformAvailability } from "@t3tools/contracts";
 import { Check, Minus } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
@@ -7,6 +8,7 @@ export function DeviceHostAvailability({
 }: {
   platforms: ReadonlyArray<DevicePlatformAvailability>;
 }) {
+  const gt = useGT();
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {platforms.map((platform) => (
@@ -18,7 +20,7 @@ export function DeviceHostAvailability({
           </TooltipTrigger>
           <TooltipPopup>
             {platform.reason ??
-              (platform.platform === "ios" ? "iOS available" : "Android available")}
+              (platform.platform === "ios" ? gt("iOS available") : gt("Android available"))}
           </TooltipPopup>
         </Tooltip>
       ))}

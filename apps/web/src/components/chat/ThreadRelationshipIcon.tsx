@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
 import type { ProviderDriverKind, ServerProvider } from "@t3tools/contracts";
 import { BotIcon, type LucideIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -8,38 +10,38 @@ export function threadRelationshipStatusLabel(status: string | null): string {
   switch (status) {
     case "preparing":
     case "starting":
-      return "Starting";
+      return translateMessage(msg("Starting"));
     case "running":
     case "in_progress":
-      return "Running";
+      return translateMessage(msg("Running"));
     case "pending":
     case "queued":
-      return "Queued";
+      return translateMessage(msg("Queued"));
     case "waiting":
     case "blocked":
-      return "Waiting";
+      return translateMessage(msg("Waiting"));
     case "completed":
-      return "Done";
+      return translateMessage(msg("Done"));
     case "failed":
     case "error":
-      return "Failed";
+      return translateMessage(msg("Failed"));
     case "cancelled":
     case "interrupted":
-      return "Stopped";
+      return translateMessage(msg("Stopped"));
     case "rolled_back":
-      return "Reverted";
+      return translateMessage(msg("Reverted"));
     case "resolved_native":
-      return "Resolved (native)";
+      return translateMessage(msg("Resolved (native)"));
     case "resolved_portable":
-      return "Resolved (portable)";
+      return translateMessage(msg("Resolved (portable)"));
     case "consumed":
-      return "Consumed";
+      return translateMessage(msg("Consumed"));
     case "superseded":
-      return "Superseded";
+      return translateMessage(msg("Superseded"));
     case "idle":
-      return "Idle";
+      return translateMessage(msg("Idle"));
     default:
-      return "Unknown";
+      return translateMessage(msg("Unknown"));
   }
 }
 

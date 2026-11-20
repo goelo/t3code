@@ -1,3 +1,6 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { msg } from "gt-react";
+
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
@@ -305,7 +308,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not open preview",
+            title: translateMessage(msg("Could not open preview")),
             description: error instanceof Error ? error.message : "An unexpected error occurred.",
           }),
         );

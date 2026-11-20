@@ -1,3 +1,5 @@
+import { translateMessage } from "../i18n/translateMessage";
+import { T, msg } from "gt-react";
 import { useSyncExternalStore } from "react";
 
 import {
@@ -46,8 +48,9 @@ function resolveConfirmDialogCopy(message: string): ConfirmationCopy {
   }
 
   return {
-    title: "Confirm action",
-    description: normalizedMessage || "This action requires your confirmation.",
+    title: translateMessage(msg("Confirm action")),
+    description:
+      normalizedMessage || translateMessage(msg("This action requires your confirmation.")),
   };
 }
 
@@ -84,12 +87,16 @@ export function ConfirmDialogHost() {
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+          <AlertDialogClose render={<Button variant="outline" />}>
+            <T>Cancel</T>
+          </AlertDialogClose>
           {focusConfirm && confirmVariant === "default" ? (
-            <AlertDialogAction onClick={onConfirm}>Confirm</AlertDialogAction>
+            <AlertDialogAction onClick={onConfirm}>
+              <T>Confirm</T>
+            </AlertDialogAction>
           ) : (
             <Button variant={confirmVariant} onClick={onConfirm}>
-              Confirm
+              <T>Confirm</T>
             </Button>
           )}
         </AlertDialogFooter>

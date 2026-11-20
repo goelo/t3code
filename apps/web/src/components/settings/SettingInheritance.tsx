@@ -1,3 +1,5 @@
+import { translateMessage } from "../../i18n/translateMessage";
+import { useGT, T, msg } from "gt-react";
 import {
   DEFAULT_SERVER_SETTINGS,
   PROJECT_FILE_BACKED_SETTINGS,
@@ -32,38 +34,39 @@ interface InheritanceLayer {
 }
 
 const WRITING_STYLE_LABELS: Record<string, string> = {
-  repo_conventions: "Repository conventions",
-  conventional_commits: "Conventional Commits",
-  custom: "Custom instructions",
+  repo_conventions: msg("Repository conventions"),
+  conventional_commits: msg("Conventional Commits"),
+  custom: msg("Custom instructions"),
 };
 
 const BACKGROUND_ACTIVITY_PROFILE_LABELS: Record<string, string> = {
-  balanced: "Balanced",
-  performance: "Performance",
-  "battery-saver": "Battery saver",
-  custom: "Advanced",
+  balanced: msg("Balanced"),
+  performance: msg("Performance"),
+  "battery-saver": msg("Battery saver"),
+  custom: msg("Advanced"),
 };
 
 function formatValue(key: keyof ServerSettings, value: unknown): string {
   if (value === null || value === undefined) {
     return key === "pullRequestMergeMethod"
-      ? "Last selected"
+      ? translateMessage(msg("Last selected"))
       : key === "sidebarAutoSettleAfterDays"
-        ? "Never"
+        ? translateMessage(msg("Never"))
         : key === "defaultModelSelection"
-          ? "Automatic"
+          ? translateMessage(msg("Automatic"))
           : key === "sourceControlWriterModelSelection"
-            ? "Text generation model"
+            ? translateMessage(msg("Text generation model"))
             : key === "reviewGuideModelSelection"
-              ? "Source control writer model"
+              ? translateMessage(msg("Source control writer model"))
               : key === "defaultThreadEnvMode" || key === "worktreeSubmodules"
-                ? "Inherit"
-                : "Not set";
+                ? translateMessage(msg("Inherit"))
+                : translateMessage(msg("Not set"));
   }
-  if (typeof value === "boolean") return value ? "On" : "Off";
+  if (typeof value === "boolean")
+    return value ? translateMessage(msg("On")) : translateMessage(msg("Off"));
   if (typeof value === "number") {
     return key === "sidebarAutoSettleAfterDays"
-      ? `${value} ${value === 1 ? "day" : "days"}`
+      ? translateMessage(msg("{count, plural, one {# day} other {# days}}"), { count: value })
       : String(value);
   }
   if (typeof value === "string") {
@@ -78,22 +81,32 @@ function formatValue(key: keyof ServerSettings, value: unknown): string {
         value as keyof typeof PULL_REQUEST_MERGE_METHOD_LABELS
       ];
     }
-    return value === "" ? "Empty" : value;
+    return value === "" ? translateMessage(msg("Empty")) : value;
   }
-  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "item" : "items"}`;
+  if (Array.isArray(value))
+    return translateMessage(msg("{count, plural, one {# item} other {# items}}"), {
+      count: value.length,
+    });
   if (typeof value === "object") {
     if (key === "backgroundActivity" && "profile" in value && typeof value.profile === "string") {
-      return BACKGROUND_ACTIVITY_PROFILE_LABELS[value.profile] ?? value.profile;
+      return BACKGROUND_ACTIVITY_PROFILE_LABELS[value.profile]
+        ? translateMessage(BACKGROUND_ACTIVITY_PROFILE_LABELS[value.profile] ?? value.profile)
+        : value.profile;
     }
     if ("model" in value && typeof value.model === "string") return value.model;
     if ("mode" in value && typeof value.mode === "string") {
-      if (key === "worktreeCleanup") return value.mode === "off" ? "Off" : "Custom";
+      if (key === "worktreeCleanup")
+        return value.mode === "off"
+          ? translateMessage(msg("Off"))
+          : translateMessage(msg("Custom"));
       return key === "sourceControlWritingStyle"
-        ? (WRITING_STYLE_LABELS[value.mode] ?? value.mode)
+        ? WRITING_STYLE_LABELS[value.mode]
+          ? translateMessage(WRITING_STYLE_LABELS[value.mode] ?? value.mode)
+          : value.mode
         : value.mode;
     }
   }
-  return "Custom";
+  return translateMessage(msg("Custom"));
 }
 
 /** Matches resolveProjectSettings order. */
@@ -110,8 +123,11 @@ export function settingInheritanceLayers(
   if (target.projectId !== null && isProjectScopedSettingKey(key)) {
     layers.push({
       key: "project",
-      label: "Project",
-      value: source === "project" ? formatValue(key, target.settings[key]) : "Inherits",
+      label: translateMessage(msg("Project")),
+      value:
+        source === "project"
+          ? formatValue(key, target.settings[key])
+          : translateMessage(msg("Inherits")),
       effective: source === "project",
       set: source === "project",
     });
@@ -119,7 +135,7 @@ export function settingInheritanceLayers(
   layers.push({
     key: "environment",
     label: target.label,
-    value: environmentSet ? formatValue(key, environmentValue) : "Inherits",
+    value: environmentSet ? formatValue(key, environmentValue) : translateMessage(msg("Inherits")),
     effective: source === "environment" && environmentSet,
     set: environmentSet,
   });
@@ -127,7 +143,10 @@ export function settingInheritanceLayers(
     layers.push({
       key: "t3.json",
       label: "t3.json",
-      value: source === "t3.json" ? formatValue(key, target.settings[key]) : "Inherits",
+      value:
+        source === "t3.json"
+          ? formatValue(key, target.settings[key])
+          : translateMessage(msg("Inherits")),
       effective: source === "t3.json",
       set: source === "t3.json",
     });
@@ -138,7 +157,7 @@ export function settingInheritanceLayers(
     : DEFAULT_SERVER_SETTINGS[key];
   layers.push({
     key: "built-in",
-    label: "Default",
+    label: translateMessage(msg("Default")),
     value: formatValue(key, builtIn),
     effective: source === "environment" && !environmentSet,
     set: true,
@@ -184,13 +203,18 @@ export function SettingInheritance({
   overridingProjects?: readonly SettingOverridingProject[];
   onClearOverrides?: (entries: readonly ProjectOverrideEntry[]) => void;
 }) {
+  const gt = useGT();
   const scopeContext = useOptionalSettingsScope();
   const key = keys[0];
   if (!key || targets.length === 0) return null;
   const hasMultipleEnvironments = new Set(targets.map((target) => target.environmentId)).size > 1;
   const overrideSummary =
     overridingProjects.length > 0
-      ? `${summary} · ${overridingProjects.length} project ${overridingProjects.length === 1 ? "override" : "overrides"}`
+      ? gt("{value0} · {value1} project {value2}", {
+          value0: summary,
+          value1: overridingProjects.length,
+          value2: overridingProjects.length === 1 ? "override" : "overrides",
+        })
       : summary;
   const chains = targets.flatMap((target) => {
     const environment = environments.find(
@@ -252,7 +276,9 @@ export function SettingInheritance({
                 <Button
                   size="icon-micro"
                   variant="ghost-muted"
-                  aria-label={`${overrideSummary}. Show where this value comes from`}
+                  aria-label={gt("{value0}. Show where this value comes from", {
+                    value0: overrideSummary,
+                  })}
                 />
               }
             />
@@ -290,7 +316,7 @@ export function SettingInheritance({
                         layer.effective ? "font-medium text-foreground" : "text-muted-foreground",
                       )}
                     >
-                      {layer.key === "environment" ? "Environment" : layer.label}
+                      {layer.key === "environment" ? gt("Environment") : layer.label}
                     </span>
                     <span
                       className={cn(
@@ -343,7 +369,7 @@ export function SettingInheritance({
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {winningLayer?.key === "environment"
-                              ? "Environment"
+                              ? gt("Environment")
                               : winningLayer?.label}
                           </span>
                           <ChevronRightIcon
@@ -377,7 +403,7 @@ export function SettingInheritance({
                     {chain}
                     {hasMultipleEnvironments ? (
                       <p className="px-2 pt-1.5 text-xs text-muted-foreground">
-                        Same on all machines
+                        <T>Same on all machines</T>
                       </p>
                     ) : null}
                   </>
@@ -396,14 +422,16 @@ export function SettingInheritance({
                             aria-hidden
                             className="size-3 [[data-panel-open]_&]:rotate-90"
                           />
-                          Overridden by
+                          <T>Overridden by</T>
                         </CollapsibleTrigger>
                       ) : (
-                        <span>Overridden by</span>
+                        <span>
+                          <T>Overridden by</T>
+                        </span>
                       )}
                       {onClearOverrides ? (
                         <InlineButton onClick={() => onClearOverrides(overriding)}>
-                          Reset {overriding.length === 1 ? "it" : "all"}
+                          {gt("Reset {value0}", { value0: overriding.length === 1 ? "it" : "all" })}
                         </InlineButton>
                       ) : null}
                     </div>

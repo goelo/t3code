@@ -1,3 +1,4 @@
+import { msg, useGT, T, useMessages } from "gt-react";
 import { AndroidIcon, AppleIcon } from "../Icons";
 import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
@@ -7,7 +8,7 @@ import { searchableSetting } from "./settingsSearch";
 
 const stores = [
   {
-    label: "iPhone and iPad",
+    label: msg("iPhone and iPad"),
     store: "App Store",
     url: "https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824",
     Icon: AppleIcon,
@@ -21,29 +22,33 @@ const stores = [
 ];
 
 export function MobileAppSettingsRow() {
+  const m = useMessages();
+  const gt = useGT();
   return (
     <SettingsRow
       {...searchableSetting("mobile-app")}
-      description="Connect to your server from your phone or tablet."
+      description={gt("Connect to your server from your phone or tablet.")}
       control={
         <div className="flex items-center gap-2">
           {stores.map(({ label, store, url, Icon }) => (
             <Popover key={store}>
               <PopoverTrigger render={<Button size="sm" variant="outline" />}>
                 <Icon />
-                {label}
+                {m(label)}
               </PopoverTrigger>
               <PopoverPopup align="end">
                 <div className="flex flex-col items-center gap-3">
-                  <PopoverTitle>{store}</PopoverTitle>
-                  <p className="text-xs text-muted-foreground">Scan with your phone camera.</p>
+                  <PopoverTitle>{m(store)}</PopoverTitle>
+                  <p className="text-xs text-muted-foreground">
+                    <T>Scan with your phone camera.</T>
+                  </p>
                   <div className="rounded-lg bg-white p-1.5">
                     <QRCodeSvg
                       value={url}
                       size={128}
                       level="M"
                       marginSize={1}
-                      title={`${store} link`}
+                      title={gt("{value0} link", { value0: store })}
                     />
                   </div>
                   <Button
@@ -51,7 +56,7 @@ export function MobileAppSettingsRow() {
                     variant="outline"
                     render={<a href={url} target="_blank" rel="noreferrer noopener" />}
                   >
-                    Open {store}
+                    {gt("Open {value0}", { value0: m(store) })}
                   </Button>
                 </div>
               </PopoverPopup>
