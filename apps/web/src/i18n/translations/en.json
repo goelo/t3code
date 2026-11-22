@@ -6409,5 +6409,17 @@
   "b30e4bab74bac872": "This change has no files to tour.",
   "27d76249d09eb69f": "Review guide ready",
   "faa3bb26abb39c93": "Review guide failed",
-  "9e91e9a77b664e4e": "Could not start a review guide"
+  "9e91e9a77b664e4e": "Could not start a review guide",
+  "ad20045b2876415a": "Session quota",
+  "a87d778e4d76d3be": "5-hour quota",
+  "f062d71378149974": "Weekly quota",
+  "fdb3697529555f02": "Monthly quota",
+  "670302de373b53f4": "{value0}% remaining",
+  "b3a656322ea9dc28": "Reset credits ×{value0}",
+  "1cbc48b0f4357983": "Low quota in {value0} of {value1} providers",
+  "f29d9349fa7abd79": "{value0}, {value1}% remaining",
+  "20f0542166235fd0": "Quota overview",
+  "074d99a04c7461b4": "Upcoming quota resets",
+  "a6d298a47db24795": "Recent conversations",
+  "58ec5327f7991235": "Running conversations"
 }

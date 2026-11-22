@@ -110,6 +110,18 @@ export function SidebarDragBoundary(props: {
   );
 }
 
+export function SidebarRecentHeader({ label }: { readonly label: string }) {
+  return (
+    <SortableSidebarMarker
+      marker="recent-header"
+      data-testid="sidebar-recent-header"
+      className="mx-0.5 flex h-8 items-center px-2 text-xs font-medium text-sidebar-muted-foreground"
+    >
+      {label}
+    </SortableSidebarMarker>
+  );
+}
+
 export function SidebarSectionHeader(props: {
   marker: "working-header" | "snoozed-header" | "settled-header";
   label: string;

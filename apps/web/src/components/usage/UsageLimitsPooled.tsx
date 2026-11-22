@@ -19,7 +19,7 @@ import {
 } from "@t3tools/shared/usageLimits";
 import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
-import { AlertTriangleIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
+import { AlertTriangleIcon, ClockIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -337,6 +337,28 @@ function RedeemableSegment({
 
 const QUOTA_CELLS_MASK =
   "repeating-linear-gradient(90deg, black 0 calc(5% - min(2px, 1%)), transparent calc(5% - min(2px, 1%)) 5%)";
+const LOW_QUOTA_PERCENT = 15;
+
+function quotaTone(remaining: number) {
+  return remaining <= LOW_QUOTA_PERCENT ? "text-warning-foreground" : "text-success-foreground";
+}
+
+function useQuotaWindowLabel() {
+  const gt = useGT();
+  return (label: string) => {
+    const names: Readonly<Record<string, string>> = {
+      Session: gt("Session quota"),
+      "5-hour": gt("5-hour quota"),
+      Weekly: gt("Weekly quota"),
+      Monthly: gt("Monthly quota"),
+    };
+    const separator = label.lastIndexOf(" · ");
+    const name = label.slice(separator < 0 ? 0 : separator + 3);
+    return Object.hasOwn(names, name)
+      ? label.slice(0, label.length - name.length) + names[name]
+      : label;
+  };
+}
 
 function QuotaBarTrigger({
   account,
@@ -355,11 +377,15 @@ function QuotaBarTrigger({
 }) {
   const gt = useGT();
   const popover = use(SegmentPopoverContext) ?? undefined;
+  const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const payload: SegmentPayload = { account, window, reset, redeem };
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const [segmentRef, paceMark] = usePaceMark(timeLeft);
   const resetsIn = formatResetsIn(window, now);
+  const resetTime = window.resetsAt
+    ? formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)
+    : "";
   const credits = account.limits.resetCredits?.availableCount ?? 0;
   return (
     <PopoverTrigger
@@ -400,7 +426,7 @@ function QuotaBarTrigger({
             </span>
           ) : null}
           <span className="ms-auto flex items-center gap-1.5 text-muted-foreground tabular-nums">
-            {resetsIn?.replace("resets in ", "↻ ") ?? ""}
+            {resetTime ? `↻ ${resetTime}` : ""}
             {credits ? (
               <span className="inline-flex items-center gap-1 rounded-sm bg-accent px-1.5 font-medium text-foreground">
                 <TicketIcon className="size-3" aria-hidden />
@@ -410,9 +436,12 @@ function QuotaBarTrigger({
           </span>
         </span>
       ) : null}
-      <span ref={segmentRef} aria-hidden className="relative h-2.5 w-full">
-        <span className="absolute inset-0" style={{ maskImage: QUOTA_CELLS_MASK }}>
-          <span className="absolute inset-0 rounded-sm bg-muted" />
+      <span ref={segmentRef} aria-hidden className="relative h-2 w-full">
+        <span
+          className="absolute inset-0 overflow-hidden rounded-sm"
+          style={{ maskImage: QUOTA_CELLS_MASK }}
+        >
+          <span className="absolute inset-0 bg-muted" />
           <span className="absolute inset-0" style={paceMark?.gap}>
             <span
               className="absolute inset-y-0 left-0 opacity-75"
@@ -420,7 +449,7 @@ function QuotaBarTrigger({
             />
             {remaining < 100 && reset && refillPercent > 0 ? (
               <span
-                className="absolute inset-y-0 right-0 opacity-30"
+                className="absolute inset-y-0 right-0 opacity-15"
                 style={{
                   width: `${Math.min(100 - remaining, refillPercent)}%`,
                   backgroundImage: `repeating-linear-gradient(135deg, ${color} 0 1px, transparent 1px 4px)`,
@@ -483,55 +512,223 @@ function PoolWindowCard({
   readonly label?: string | null | undefined;
   readonly description?: string | undefined;
 }) {
+  const gt = useGT();
+  const windowLabel = useQuotaWindowLabel();
   const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
   return (
-    <div className="grid min-w-0 gap-1.5 border-t border-border/60 pt-3">
+    <div className="grid min-w-0 gap-1 border-t border-border/60 pt-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
         {label !== null ? (
-          <span className="min-w-0 text-sm font-medium text-foreground">{label ?? pool.label}</span>
+          <span className="min-w-0 text-xs font-medium text-muted-foreground">
+            {windowLabel(label ?? pool.label)}
+          </span>
         ) : null}
-        <span className="ms-auto flex items-baseline gap-1.5 whitespace-nowrap">
+        <span className="ms-auto flex items-center gap-1.5 whitespace-nowrap">
           <span
-            className={cn(
-              "text-xl font-semibold leading-none tabular-nums",
-              pool.remainingPercent <= 15 ? "text-warning-foreground" : "text-foreground",
-            )}
+            className={cn("text-sm font-semibold tabular-nums", quotaTone(pool.remainingPercent))}
+            aria-label={gt("{value0}% remaining", { value0: pool.remainingPercent })}
           >
             {pool.remainingPercent}%
-          </span>
-          <span className="text-xs text-muted-foreground">
-            <T>left</T>
           </span>
           {pool.pace ? <PaceIcon pace={pool.pace} /> : null}
         </span>
       </div>
+      <PoolBar pool={pool} color={color} now={now} />
       {nextRefill && pool.columns.length > 1 ? (
-        <span className="text-xs font-medium text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           ↻ +{nextRefill.restoresPercent}%
         </span>
       ) : null}
-      <PoolBar pool={pool} color={color} now={now} />
       {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
     </div>
   );
 }
 
-function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: number }) {
-  const color = barColor(pool.driver);
-  const label = providerClients.get(pool.driver)?.label ?? String(pool.driver);
-  const windows = displayLimitWindows(pool);
+function PoolResetActions({
+  account,
+  destination,
+  choices,
+  showAccount,
+}: {
+  readonly account: LimitAccount;
+  readonly destination: NonNullable<LimitAccount["redeem"]>;
+  readonly choices: readonly ResetCreditChoice[];
+  readonly showAccount: boolean;
+}) {
+  const gt = useGT();
+  const reset = useResetCredit(destination.environmentId);
   return (
-    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border/70 bg-card p-4">
-      <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <ProviderInstanceIcon
-          driverKind={pool.driver}
-          displayName={label}
-          indicatorBackground="var(--background)"
-          className="size-5"
-          iconClassName="size-4 text-foreground/80"
-        />
-        {label}
-      </h2>
+    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+      {showAccount ? (
+        <AccountName account={account} className="truncate text-xs text-muted-foreground" />
+      ) : null}
+      {choices.map((choice) => (
+        <Button
+          key={choice.key}
+          size="xs"
+          variant="warning-outline"
+          disabled={reset.busy || !reset.canManageProviders}
+          onClick={() => reset.confirm(choice)}
+        >
+          <TicketIcon aria-hidden />
+          {choices.length === 1
+            ? gt("Reset credits ×{value0}", { value0: choice.availableCount })
+            : choice.summary}
+        </Button>
+      ))}
+      <ResetCreditDialog
+        open={reset.confirming}
+        onOpenChange={reset.setConfirming}
+        choice={reset.choice}
+        onConfirm={() => void reset.redeem()}
+        disabled={!reset.canManageProviders}
+      />
+      {reset.busy || reset.status ? (
+        <span className="w-full text-end text-xs text-muted-foreground" role="status">
+          {reset.busy ? gt("Using reset credit…") : reset.status}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+type QuotaCard = {
+  readonly pool: LimitPool;
+  readonly label: string;
+  readonly windows: readonly LimitPoolWindow[];
+  readonly primary: LimitPoolWindow;
+  readonly lowest: LimitPoolWindow;
+};
+
+function quotaCards(pools: readonly LimitPool[]): readonly QuotaCard[] {
+  const order: readonly string[] = ["codex", "claudeAgent", "antigravity"];
+  const rank = (driver: string) => {
+    const index = order.indexOf(driver);
+    return index < 0 ? order.length : index;
+  };
+  return [...pools]
+    .sort((a, b) => rank(a.driver) - rank(b.driver))
+    .flatMap((pool) => {
+      const windows = displayLimitWindows(pool);
+      const primary = windows.find((window) => window.kind === "weekly") ?? windows[0];
+      if (!primary) return [];
+      return [
+        {
+          pool,
+          label: providerClients.get(pool.driver)?.label ?? String(pool.driver),
+          windows,
+          primary,
+          lowest: windows.reduce(
+            (lowest, window) =>
+              window.remainingPercent < lowest.remainingPercent ? window : lowest,
+            primary,
+          ),
+        },
+      ];
+    });
+}
+
+function QuotaOverview({ cards }: { readonly cards: readonly QuotaCard[] }) {
+  const gt = useGT();
+  const windowLabel = useQuotaWindowLabel();
+  const lowCount = cards.filter(
+    ({ lowest }) => lowest.remainingPercent <= LOW_QUOTA_PERCENT,
+  ).length;
+  return (
+    <section className="grid gap-2.5 rounded-xl border border-border/60 bg-linear-to-br from-card to-muted/35 p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">
+          <T>Quota overview</T>
+        </h2>
+        {lowCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
+            <AlertTriangleIcon aria-hidden className="size-3.5" />
+            {gt("Low quota in {value0} of {value1} providers", {
+              value0: lowCount,
+              value1: cards.length,
+            })}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {cards.map(({ pool, label, lowest }) => (
+          <span
+            key={pool.driver}
+            className="inline-flex flex-wrap items-baseline gap-x-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-xs"
+          >
+            <span className="font-medium">{label}</span>
+            <span className="text-muted-foreground">{windowLabel(lowest.label)}</span>
+            <span className={cn("font-semibold tabular-nums", quotaTone(lowest.remainingPercent))}>
+              {lowest.remainingPercent}%
+            </span>
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PoolSection({ card, now }: { readonly card: QuotaCard; readonly now: number }) {
+  const gt = useGT();
+  const windowLabel = useQuotaWindowLabel();
+  const { pool, label, windows, primary } = card;
+  const color = barColor(pool.driver);
+  const plans = [
+    ...new Set(pool.accounts.flatMap((account) => (account.plan ? [account.plan] : []))),
+  ];
+  const resetActions = pool.accounts.flatMap((account) => {
+    const destination = account.redeem;
+    const credits = account.limits.resetCredits;
+    if (!destination || !credits?.availableCount) return [];
+    const choices = resetCreditChoices(credits, destination.input, now, true).filter(
+      (choice) => choice.availableCount > 0,
+    );
+    return choices.length ? [{ account, destination, choices }] : [];
+  });
+  return (
+    <section className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-border/70 bg-card p-3.5 shadow-xs">
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted/70">
+            <ProviderInstanceIcon
+              driverKind={pool.driver}
+              displayName={label}
+              indicatorBackground="var(--muted)"
+              className="size-6"
+              iconClassName="size-5 text-foreground/80"
+            />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="truncate text-sm font-semibold text-foreground">{label}</h2>
+            {plans.length > 0 ? (
+              <div className="truncate text-xs text-muted-foreground">{plans.join(" · ")}</div>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-center gap-0.5">
+          <span
+            role="img"
+            aria-label={gt("{value0}, {value1}% remaining", {
+              value0: windowLabel(primary.label),
+              value1: primary.remainingPercent,
+            })}
+            className={cn(
+              "grid size-10 place-items-center rounded-full",
+              quotaTone(primary.remainingPercent),
+            )}
+            style={{
+              backgroundImage: `conic-gradient(currentColor ${primary.remainingPercent}%, var(--border) 0)`,
+            }}
+          >
+            <span className="grid size-[34px] place-items-center rounded-full bg-card text-xs font-semibold text-foreground tabular-nums">
+              {primary.remainingPercent}%
+            </span>
+          </span>
+          <span className="max-w-24 truncate text-2xs text-muted-foreground">
+            {windowLabel(primary.label)}
+          </span>
+        </div>
+      </header>
       {windows.map((window) => {
         const details =
           pool.driver === "cursor" ? cursorUsageWindowDetails(window.id, pool) : undefined;
@@ -546,6 +743,71 @@ function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: nu
           />
         );
       })}
+      {resetActions.length > 0 ? (
+        <footer className="mt-auto flex flex-wrap justify-end gap-1.5 border-t border-border/60 pt-2.5">
+          {resetActions.map((action) => (
+            <PoolResetActions
+              key={action.account.key}
+              {...action}
+              showAccount={pool.accounts.length > 1}
+            />
+          ))}
+        </footer>
+      ) : null}
+    </section>
+  );
+}
+
+function UpcomingQuotaResets({
+  cards,
+  now,
+}: {
+  readonly cards: readonly QuotaCard[];
+  readonly now: number;
+}) {
+  const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
+  const windowLabel = useQuotaWindowLabel();
+  const resets = cards
+    .flatMap(({ label, pool, windows }) =>
+      windows.flatMap((window) =>
+        window.resets.flatMap((reset) =>
+          reset.at > now && reset.restoresPercent > 0
+            ? [
+                {
+                  key: `${pool.driver}:${window.id}:${reset.member.account.key}`,
+                  label,
+                  window,
+                  at: reset.at,
+                },
+              ]
+            : [],
+        ),
+      ),
+    )
+    .sort((a, b) => a.at - b.at)
+    .slice(0, 3);
+  if (!resets.length) return null;
+  return (
+    <section className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-border/70 bg-linear-to-br from-card to-muted/40 p-3.5 shadow-xs">
+      <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <ClockIcon className="size-4 text-muted-foreground" aria-hidden />
+        <T>Upcoming quota resets</T>
+      </h2>
+      <ul className="grid gap-2">
+        {resets.map(({ key, label, window, at }) => (
+          <li
+            key={key}
+            className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 gap-y-1 border-t border-border/60 pt-2 text-xs"
+          >
+            <span className="min-w-0 font-medium">
+              {label} · {windowLabel(window.label)}
+            </span>
+            <span className="text-muted-foreground tabular-nums">
+              {formatUpcomingTimestamp(new Date(at).toISOString(), timestampFormat, now)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -560,26 +822,29 @@ export function UsageLimitsPooled({
   const [segmentPopover] = useState(() => PopoverCreateHandle<SegmentPayload>());
   const segmentPopoverActions = useRef<PopoverPrimitive.Root.Actions | null>(null);
   const pools = collectLimitPools(collectLimitAccounts(presentations), now);
+  const cards = quotaCards(pools);
   const notices = collectLimitNotices(presentations);
   const externalLinks = collectExternalUsageLinks(presentations);
   return (
     <div className="@container/usage-limits flex flex-col gap-4">
-      {pools.length === 0 && notices.length === 0 && externalLinks.length === 0 ? (
+      {cards.length === 0 && notices.length === 0 && externalLinks.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           <T>No provider on the selected environments reports subscription limits.</T>
         </p>
       ) : null}
+      {cards.length > 0 ? <QuotaOverview cards={cards} /> : null}
       <SegmentPopoverContext value={segmentPopover}>
-        {pools.length > 0 ? (
+        {cards.length > 0 ? (
           <div
             className={cn(
-              "grid min-w-0 items-start gap-3",
-              pools.length > 1 && "@min-[36rem]/usage-limits:grid-cols-2",
+              "grid min-w-0 gap-3",
+              cards.length > 1 && "@min-[36rem]/usage-limits:grid-cols-2",
             )}
           >
-            {pools.map((pool) => (
-              <PoolSection key={pool.driver} pool={pool} now={now} />
+            {cards.map((card) => (
+              <PoolSection key={card.pool.driver} card={card} now={now} />
             ))}
+            {cards.length === 3 ? <UpcomingQuotaResets cards={cards} now={now} /> : null}
           </div>
         ) : null}
       </SegmentPopoverContext>

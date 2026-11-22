@@ -22,6 +22,7 @@ import {
   shouldRecedeSidebarThread,
   sortInboxThreadsByReturn,
   resolveSidebarDropTarget,
+  sidebarMarkerId,
   planSidebarThreadDrop,
   resolveSidebarReorderableThreadKeys,
   sortPinnedThreadsForSidebar,
@@ -1107,19 +1108,27 @@ describe("Working shelf (beta)", () => {
       section,
     });
     const items: readonly SidebarListItem[] = [
+      marker("working-header"),
+      row("w1", "working"),
+      marker("recent-header"),
       marker("pinned-header"),
       row("p1", "pinned"),
       marker("pinned-divider"),
       row("a1", "active"),
       row("a2", "active"),
-      marker("working-header"),
-      row("w1", "working"),
       marker("settled-header"),
       row("s1", "settled"),
     ];
 
     it("never drops into the Working shelf, and keeps it out of the inbox order", () => {
       expect(resolveSidebarDropTarget(items, "a1", "w1")).toBeNull();
+      expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("working-header"))).toBeNull();
+      expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("recent-header"))).toBeNull();
+      expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("pinned-header"))).toEqual({
+        section: "pinned",
+        pinnedOrder: ["a1", "p1"],
+        activeOrder: ["a2"],
+      });
       expect(resolveSidebarDropTarget(items, "p1", "a2")).toEqual({
         section: "active",
         pinnedOrder: [],
