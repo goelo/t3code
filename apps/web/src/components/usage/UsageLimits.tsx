@@ -293,8 +293,7 @@ export function useResetCredit(environmentId: EnvironmentId) {
   return { canManageProviders, choice, confirming, setConfirming, confirm, busy, status, redeem };
 }
 
-/** Require confirmation because redemption spends credits. Mount outside popovers, which stack above
- * dialogs and unmount on close. */
+/** Mount outside the account popover so its confirmation survives dismissal. */
 export function ResetCreditDialog({
   open,
   onOpenChange,
@@ -310,7 +309,7 @@ export function ResetCreditDialog({
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogPopup>
+      <AlertDialogPopup abovePopover>
         <AlertDialogHeader>
           <AlertDialogTitle>
             <T>Use a reset credit?</T>

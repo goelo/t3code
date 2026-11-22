@@ -22,7 +22,6 @@ import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/prov
 import { AlertTriangleIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
 import {
   createContext,
-  Fragment,
   type ReactNode,
   type RefObject,
   use,
@@ -286,8 +285,7 @@ function ActiveSegmentPopover({
 }
 
 /**
- * The confirm is a sibling of the popover, not a child: dialogs stack under
- * popovers, and the popover closes as the confirm opens.
+ * The confirm remains mounted after the account popover closes.
  */
 function PoolSegment({
   account,
@@ -299,27 +297,26 @@ function PoolSegment({
   readonly refillPercent: number;
   readonly color: string;
   readonly now: number;
-  readonly index: number;
   readonly showAccountName: boolean;
 }) {
   return account.redeem ? (
     <RedeemableSegment account={account} redeemAt={account.redeem} {...props} />
   ) : (
-    <SegmentTriggers account={account} redeem={null} {...props} />
+    <QuotaBarTrigger account={account} redeem={null} {...props} />
   );
 }
 
 function RedeemableSegment({
   redeemAt,
   ...props
-}: Omit<Parameters<typeof SegmentTriggers>[0], "redeem"> & {
+}: Omit<Parameters<typeof QuotaBarTrigger>[0], "redeem"> & {
   readonly redeemAt: NonNullable<LimitAccount["redeem"]>;
 }) {
   const gt = useGT();
   const redeem = useResetCredit(redeemAt.environmentId);
   return (
     <>
-      <SegmentTriggers redeem={redeem} {...props} />
+      <QuotaBarTrigger redeem={redeem} {...props} />
       <ResetCreditDialog
         open={redeem.confirming}
         onOpenChange={redeem.setConfirming}
@@ -329,7 +326,7 @@ function RedeemableSegment({
       />
       {/* The popover closed before the confirm, so progress and the outcome need a home outside it. */}
       {redeem.busy || redeem.status ? (
-        <span role="status" className="col-span-full text-xs text-muted-foreground">
+        <span role="status" className="text-xs text-muted-foreground">
           <AccountName account={props.account} className="font-medium text-foreground" />{" "}
           {redeem.busy ? gt("Using reset credit…") : redeem.status}
         </span>
@@ -338,7 +335,10 @@ function RedeemableSegment({
   );
 }
 
-function SegmentTriggers({
+const QUOTA_CELLS_MASK =
+  "repeating-linear-gradient(90deg, black 0 calc(5% - min(2px, 1%)), transparent calc(5% - min(2px, 1%)) 5%)";
+
+function QuotaBarTrigger({
   account,
   window,
   reset,
@@ -346,13 +346,11 @@ function SegmentTriggers({
   refillPercent,
   color,
   now,
-  index,
   showAccountName,
 }: SegmentPayload & {
   readonly refillPercent: number;
   readonly color: string;
   readonly now: number;
-  readonly index: number;
   readonly showAccountName: boolean;
 }) {
   const gt = useGT();
@@ -364,162 +362,78 @@ function SegmentTriggers({
   const resetsIn = formatResetsIn(window, now);
   const credits = account.limits.resetCredits?.availableCount ?? 0;
   return (
-    <>
-      <PopoverTrigger
-        handle={popover}
-        payload={payload}
-        openOnHover
-        render={
-          <button
-            ref={segmentRef}
-            type="button"
-            style={{ gridColumn: index, gridRow: 1, ...paceMark?.gappedTrack }}
-            aria-label={gt("{value0}: {value1}% left{value2}{value3}{value4}", {
-              value0:
-                account.displayName ??
-                (account.email ? accountInitials(account.email) : account.driver),
-              value1: remaining,
-              value2: resetsIn ? `, ${resetsIn}` : "",
-              value3:
-                timeLeft === null ? "" : gt(", {value0}% of the window left", { value0: timeLeft }),
-              value4: credits
-                ? gt(", {value0} reset {value1} banked", {
-                    value0: credits,
-                    value1: credits === 1 ? "credit" : "credits",
-                  })
-                : "",
-            })}
-            className="relative h-5 min-w-0 cursor-pointer rounded-md bg-muted text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[popup-open]:ring-1 data-[popup-open]:ring-inset data-[popup-open]:ring-border @2xl/pool:h-8"
-          />
-        }
-      >
-        <div aria-hidden className="absolute inset-0 overflow-hidden rounded-md">
-          {/* Clipped inside the rounded clip so the bar's own corners keep their antialiasing. */}
-          <div className="absolute inset-0" style={paceMark?.gap}>
-            <div
-              aria-hidden
-              className="absolute inset-y-0 left-0 rounded-md opacity-35"
-              style={{ width: `${remaining}%`, backgroundColor: color }}
-            />
-            {remaining < 100 && reset && refillPercent > 0 ? (
-              <div
-                aria-hidden
-                className="absolute inset-y-0 right-0 opacity-20"
-                style={{
-                  width: `${Math.min(100 - remaining, refillPercent)}%`,
-                  backgroundImage: `repeating-linear-gradient(135deg, ${color} 0 1px, transparent 1px 5px)`,
-                }}
-              />
-            ) : null}
-          </div>
-        </div>
-        {paceMark ? (
-          <span
-            aria-hidden
-            className="absolute inset-y-0.5 w-0.5 -translate-x-1/2 rounded-full bg-foreground"
-            style={paceMark.tick}
-          />
-        ) : null}
-        <span
-          aria-hidden
-          className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-md text-3xs leading-none font-semibold text-foreground/80 tabular-nums @2xl/pool:hidden"
-        >
-          {index}
-        </span>
-        <div className="relative hidden h-full min-w-0 items-center gap-1.5 overflow-hidden rounded-md px-2 text-xs @2xl/pool:flex">
-          {showAccountName ? (
-            <AccountName
-              account={account}
-              className="min-w-0 truncate font-medium text-foreground"
-            />
-          ) : null}
-          {/* A single-account bar repeats the headline percentage. */}
-          {showAccountName ? (
-            <span className="shrink-0 font-semibold text-foreground tabular-nums">
-              {remaining}%
-            </span>
-          ) : null}
-          {resetsIn || credits ? (
-            <span className="ms-auto flex min-w-0 items-center gap-1.5 overflow-hidden rounded-sm bg-background/85 px-1.5 py-0.5 text-2xs whitespace-nowrap text-foreground tabular-nums">
-              {resetsIn?.replace("resets in ", "↻ ") ?? ""}
-              {credits ? (
-                <>
-                  {resetsIn ? (
-                    <span aria-hidden className="text-muted-foreground">
-                      ·
-                    </span>
-                  ) : null}
-                  <span aria-hidden className="inline-flex items-center gap-0.5 font-semibold">
-                    <TicketIcon className="size-3" aria-hidden />
-                    {credits}
-                  </span>
-                </>
-              ) : null}
-            </span>
-          ) : null}
-        </div>
-      </PopoverTrigger>
-      <LegendRow payload={payload} color={color} now={now} index={index} />
-    </>
-  );
-}
-
-function LegendRow({
-  payload,
-  color,
-  now,
-  index,
-}: {
-  readonly payload: SegmentPayload;
-  readonly color: string;
-  readonly now: number;
-  readonly index: number;
-}) {
-  const popover = use(SegmentPopoverContext) ?? undefined;
-  const { account, window } = payload;
-  const remaining = remainingPercent(window);
-  const resetsIn = formatResetsIn(window, now);
-  const credits = account.limits.resetCredits?.availableCount ?? 0;
-  return (
     <PopoverTrigger
       handle={popover}
       payload={payload}
-      style={{ gridColumn: "1 / -1", gridRow: index + 1 }}
-      render={<Button variant="ghost" size="compact" />}
-      className="min-w-0 @2xl/pool:hidden"
-    >
-      <span className="relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-3xs leading-none font-semibold text-foreground/80 tabular-nums">
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-sm opacity-35"
-          style={{ backgroundColor: color }}
+      openOnHover
+      render={
+        <button
+          type="button"
+          aria-label={gt("{value0}: {value1}% left{value2}{value3}{value4}", {
+            value0:
+              account.displayName ??
+              (account.email ? accountInitials(account.email) : account.driver),
+            value1: remaining,
+            value2: resetsIn ? `, ${resetsIn}` : "",
+            value3:
+              timeLeft === null ? "" : gt(", {value0}% of the window left", { value0: timeLeft }),
+            value4: credits
+              ? gt(", {value0} reset {value1} banked", {
+                  value0: credits,
+                  value1: credits === 1 ? "credit" : "credits",
+                })
+              : "",
+          })}
+          className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-md py-1 text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[popup-open]:bg-accent/50"
         />
-        <span className="sr-only">
-          <T>Segment </T>
+      }
+    >
+      {showAccountName || resetsIn || credits > 0 ? (
+        <span className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          {showAccountName ? (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <AccountName
+                account={account}
+                className="min-w-0 truncate font-medium text-foreground"
+              />
+              <span className="shrink-0 text-muted-foreground tabular-nums">{remaining}%</span>
+            </span>
+          ) : null}
+          <span className="ms-auto flex items-center gap-1.5 text-muted-foreground tabular-nums">
+            {resetsIn?.replace("resets in ", "↻ ") ?? ""}
+            {credits ? (
+              <span className="inline-flex items-center gap-1 rounded-sm bg-accent px-1.5 font-medium text-foreground">
+                <TicketIcon className="size-3" aria-hidden />
+                {credits}
+              </span>
+            ) : null}
+          </span>
         </span>
-        <span className="relative">{index}</span>
-      </span>
-      <AccountName account={account} className="min-w-0 truncate font-medium text-foreground" />
-      <span className="shrink-0 font-semibold text-foreground tabular-nums">{remaining}%</span>
-      <span className="ms-auto flex shrink-0 items-center gap-1.5 text-2xs text-muted-foreground tabular-nums">
-        {resetsIn?.replace("resets in ", "↻ ") ?? ""}
-        {credits ? (
-          <>
-            {resetsIn ? <span aria-hidden>·</span> : null}
+      ) : null}
+      <span ref={segmentRef} aria-hidden className="relative h-2.5 w-full">
+        <span className="absolute inset-0" style={{ maskImage: QUOTA_CELLS_MASK }}>
+          <span className="absolute inset-0 rounded-sm bg-muted" />
+          <span className="absolute inset-0" style={paceMark?.gap}>
             <span
-              aria-hidden
-              className="inline-flex items-center gap-0.5 font-semibold text-foreground"
-            >
-              <TicketIcon className="size-3" aria-hidden />
-              {credits}
-            </span>
-            <span className="sr-only">
-              {credits}
-              <T> reset </T>
-              {credits === 1 ? "credit" : "credits"}
-              <T> banked</T>
-            </span>
-          </>
+              className="absolute inset-y-0 left-0 opacity-75"
+              style={{ width: `${remaining}%`, backgroundColor: color }}
+            />
+            {remaining < 100 && reset && refillPercent > 0 ? (
+              <span
+                className="absolute inset-y-0 right-0 opacity-30"
+                style={{
+                  width: `${Math.min(100 - remaining, refillPercent)}%`,
+                  backgroundImage: `repeating-linear-gradient(135deg, ${color} 0 1px, transparent 1px 4px)`,
+                }}
+              />
+            ) : null}
+          </span>
+        </span>
+        {paceMark ? (
+          <span
+            className="absolute -inset-y-0.5 w-0.5 -translate-x-1/2 rounded-full bg-foreground ring-1 ring-background"
+            style={paceMark.tick}
+          />
         ) : null}
       </span>
     </PopoverTrigger>
@@ -537,27 +451,21 @@ function PoolBar({
 }) {
   const restores = new Map(pool.resets.map((reset) => [reset.member.account.key, reset]));
   return (
-    <div className="@container/pool min-w-0">
-      <div
-        className="grid gap-x-1 gap-y-1"
-        style={{ gridTemplateColumns: `repeat(${pool.columns.length}, minmax(0, 1fr))` }}
-      >
-        {pool.columns.map((member, position) =>
-          member.window ? (
-            <PoolSegment
-              key={member.account.key}
-              account={member.account}
-              window={member.window}
-              reset={restores.get(member.account.key)}
-              refillPercent={member.refillPercent}
-              color={normalizeProviderAccentColor(member.account.accentColor) ?? color}
-              now={now}
-              index={position + 1}
-              showAccountName={pool.columns.length > 1}
-            />
-          ) : null,
-        )}
-      </div>
+    <div className="grid min-w-0 gap-1">
+      {pool.columns.map((member) =>
+        member.window ? (
+          <PoolSegment
+            key={member.account.key}
+            account={member.account}
+            window={member.window}
+            reset={restores.get(member.account.key)}
+            refillPercent={member.refillPercent}
+            color={normalizeProviderAccentColor(member.account.accentColor) ?? color}
+            now={now}
+            showAccountName={pool.columns.length > 1}
+          />
+        ) : null,
+      )}
     </div>
   );
 }
@@ -577,32 +485,33 @@ function PoolWindowCard({
 }) {
   const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
   return (
-    <div className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border/60 p-4 md:grid-cols-[11rem_minmax(0,1fr)]">
-      <div className="flex flex-col gap-1">
+    <div className="grid min-w-0 gap-1.5 border-t border-border/60 pt-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
         {label !== null ? (
-          <span className="text-sm font-medium text-foreground">{label ?? pool.label}</span>
+          <span className="min-w-0 text-sm font-medium text-foreground">{label ?? pool.label}</span>
         ) : null}
-        <span className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold text-foreground tabular-nums">
+        <span className="ms-auto flex items-baseline gap-1.5 whitespace-nowrap">
+          <span
+            className={cn(
+              "text-xl font-semibold leading-none tabular-nums",
+              pool.remainingPercent <= 15 ? "text-warning-foreground" : "text-foreground",
+            )}
+          >
             {pool.remainingPercent}%
           </span>
-          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <span>
-              <T>left</T>
-            </span>
-            {pool.pace ? <PaceIcon pace={pool.pace} /> : null}
+          <span className="text-xs text-muted-foreground">
+            <T>left</T>
           </span>
+          {pool.pace ? <PaceIcon pace={pool.pace} /> : null}
         </span>
-        {nextRefill && pool.columns.length > 1 ? (
-          <span className="text-xs font-medium text-foreground tabular-nums">
-            ↻ +{nextRefill.restoresPercent}%
-          </span>
-        ) : null}
       </div>
-      <PoolBar pool={pool} color={color} now={now} />
-      {description ? (
-        <p className="text-xs text-muted-foreground md:col-span-2">{description}</p>
+      {nextRefill && pool.columns.length > 1 ? (
+        <span className="text-xs font-medium text-muted-foreground tabular-nums">
+          ↻ +{nextRefill.restoresPercent}%
+        </span>
       ) : null}
+      <PoolBar pool={pool} color={color} now={now} />
+      {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
     </div>
   );
 }
@@ -612,7 +521,7 @@ function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: nu
   const label = providerClients.get(pool.driver)?.label ?? String(pool.driver);
   const windows = displayLimitWindows(pool);
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border/70 bg-card p-4">
       <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
         <ProviderInstanceIcon
           driverKind={pool.driver}
@@ -654,18 +563,25 @@ export function UsageLimitsPooled({
   const notices = collectLimitNotices(presentations);
   const externalLinks = collectExternalUsageLinks(presentations);
   return (
-    <div className="flex flex-col gap-8">
+    <div className="@container/usage-limits flex flex-col gap-4">
       {pools.length === 0 && notices.length === 0 && externalLinks.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           <T>No provider on the selected environments reports subscription limits.</T>
         </p>
       ) : null}
       <SegmentPopoverContext value={segmentPopover}>
-        {pools.map((pool) => (
-          <Fragment key={pool.driver}>
-            <PoolSection pool={pool} now={now} />
-          </Fragment>
-        ))}
+        {pools.length > 0 ? (
+          <div
+            className={cn(
+              "grid min-w-0 items-start gap-3",
+              pools.length > 1 && "@min-[36rem]/usage-limits:grid-cols-2",
+            )}
+          >
+            {pools.map((pool) => (
+              <PoolSection key={pool.driver} pool={pool} now={now} />
+            ))}
+          </div>
+        ) : null}
       </SegmentPopoverContext>
       <Popover handle={segmentPopover} actionsRef={segmentPopoverActions}>
         {({ payload }) =>
