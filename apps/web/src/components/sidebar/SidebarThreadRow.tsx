@@ -809,7 +809,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                         icon: "woke" as const,
                         className: "text-warning-foreground",
                       }
-                    : props.pinnedStage === "completed"
+                    : props.pinnedStage === "completed" && isUnread
                       ? {
                           label: gt("Review needed"),
                           icon: "done" as const,

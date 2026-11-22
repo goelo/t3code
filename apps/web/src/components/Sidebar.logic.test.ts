@@ -434,9 +434,19 @@ describe("isSidebarThreadCompleted", () => {
     goal: null,
   } satisfies Parameters<typeof isSidebarThreadCompleted>[0];
 
-  it("keeps a successful run in the review group after the thread is read", () => {
-    expect(hasUnseenCompletion(completed)).toBe(false);
-    expect(isSidebarThreadCompleted(completed)).toBe(true);
+  it("tracks unseen completion independently of the Completed group across visits and turns", () => {
+    const unopened = { ...completed, lastVisitedAt: "2026-03-09T10:04:00.000Z" };
+    const reopened = {
+      ...completed,
+      latestRun: makeLatestRun({
+        startedAt: "2026-03-09T10:08:00.000Z",
+        completedAt: "2026-03-09T10:09:00.000Z",
+      }),
+      latestUserMessageAt: "2026-03-09T10:07:00.000Z",
+    };
+
+    expect([unopened, completed, reopened].map(hasUnseenCompletion)).toEqual([true, false, true]);
+    expect([unopened, completed, reopened].every(isSidebarThreadCompleted)).toBe(true);
   });
 
   it.each([

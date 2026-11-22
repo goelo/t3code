@@ -3681,7 +3681,6 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                 key="completed-header"
                                 marker="completed-header"
                                 label={gt("Completed")}
-                                hint={completedCount > 0 ? gt("Review needed") : undefined}
                                 count={completedCount}
                                 toggle={{
                                   expanded: completedShelfExpanded,

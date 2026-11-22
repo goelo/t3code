@@ -137,7 +137,6 @@ export function SidebarSectionHeader(props: {
   marker: keyof typeof stageHeaders | "snoozed-header";
   label: string;
   count: number;
-  hint?: string | undefined;
   className?: string;
   dragging?: boolean;
   boundary?: "drag" | "hidden" | undefined;
@@ -180,12 +179,7 @@ export function SidebarSectionHeader(props: {
                 : "muted"
         }
         data-testid={`sidebar-${shelf}-shelf-toggle`}
-        accessory={
-          <>
-            {props.hint ? <span className="shrink-0 font-normal">{props.hint}</span> : null}
-            <span className="font-normal tabular-nums">{props.count}</span>
-          </>
-        }
+        accessory={<span className="font-normal tabular-nums">{props.count}</span>}
       >
         <span className="flex items-center gap-1.5">
           {Icon ? <Icon aria-hidden className="size-3.5 shrink-0" /> : null}

@@ -134,9 +134,10 @@ open.
 ### Review finished conversations
 
 On web and desktop, open **Completed** to review conversations whose latest turn finished
-successfully and is ready for your review. Opening a conversation keeps it in Completed.
-Sending another message moves it to **In progress**. Use **Settle thread** to file the result under
-**Settled**, which starts collapsed. Pinned conversations show their status in **Pinned**.
+successfully. Pinned conversations show **Review needed** until you open them to view their
+latest completed result. Opening a conversation keeps it in its current section.
+Sending another message moves an unpinned conversation to **In progress**. Use **Settle thread**
+to mark the work as settled.
 
 Turn on **Settings → General → Working threads first** to bring running threads and threads
 waiting on background work to the top of In progress. iOS and Android offer a separate **Working
