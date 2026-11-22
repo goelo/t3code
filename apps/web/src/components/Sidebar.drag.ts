@@ -92,6 +92,7 @@ export function createSidebarSortingStrategy(input: {
   enabled?: boolean;
   settledOrder: readonly string[];
   activeOrder?: readonly string[];
+  completedThreadKeys?: ReadonlySet<string>;
   settledExpanded: boolean;
   settledVisibleCount?: number;
   routeThreadKey?: string | null;
@@ -124,7 +125,7 @@ export function createSidebarSortingStrategy(input: {
     let headerScale: number | undefined;
     for (const [index, item] of items.entries()) {
       if (item.kind === "marker") {
-        if (item.marker === "working-header" || isBottomShelfHeader(item)) {
+        if (item.marker === "completed-header" || isBottomShelfHeader(item)) {
           const height = rects[index]?.height;
           if (height) headerScale ??= height / 32;
         }
@@ -170,17 +171,23 @@ export function createSidebarSortingStrategy(input: {
       if (groups[name].length > 0) projected.push(...groups[name]);
       else marker(`${name}-placeholder`);
     };
-    if (items.some((item) => item.kind === "marker" && item.marker === "working-header")) {
-      marker("working-header");
-      projected.push(...groups.working);
-    }
     if (items.some((item) => item.kind === "marker" && item.marker === "recent-header")) {
       marker("recent-header");
     }
     marker("pinned-header");
     projected.push(...groups.pinned);
     marker("pinned-divider");
-    section("active");
+    const hasCompletedShelf = indices.has(sidebarMarkerId("completed-header"));
+    if (hasCompletedShelf) {
+      projected.push(...groups.working);
+      const completed = groups.active.filter((item) => input.completedThreadKeys?.has(item.key));
+      groups.active = groups.active.filter((item) => !input.completedThreadKeys?.has(item.key));
+      section("active");
+      marker("completed-header");
+      projected.push(...completed);
+    } else {
+      section("active");
+    }
     if (
       groups.snoozed.length > 0 ||
       ((active.section !== "snoozed" || (input.snoozedThreadCount ?? 0) > 1) &&

@@ -4342,22 +4342,23 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         case "thread.unarchive":
           return { ...thread, archivedAt: null, updatedAt: now };
         case "thread.settle": {
-          const wasPinned = thread.pinnedAt != null;
-          const alreadySettled =
-            thread.settledOverride === "settled" && thread.settledAt !== null && !wasPinned;
+          const alreadySettled = thread.settledOverride === "settled" && thread.settledAt !== null;
+          const removesPin = command.unpin === true && thread.pinnedAt != null;
           return {
             ...thread,
             settledOverride: "settled",
             settledAt: alreadySettled ? thread.settledAt : (command.settledAt ?? now),
             pullRequests: thread.pullRequests?.map((link) => withPullRequestWatch(link, undefined)),
             unsettledAt: null,
-            pinnedAt: null,
-            pinOrderKey: null,
+            ...(command.unpin === true ? { pinnedAt: null, pinOrderKey: null } : {}),
             activeOrderKey: null,
             snoozedUntil: null,
             snoozedAt: null,
             updatedAt:
-              alreadySettled && thread.snoozedUntil == null && thread.snoozedAt == null
+              alreadySettled &&
+              !removesPin &&
+              thread.snoozedUntil == null &&
+              thread.snoozedAt == null
                 ? thread.updatedAt
                 : now,
           };
@@ -4402,21 +4403,17 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         }
         case "thread.pin": {
           const alreadyPinned = thread.pinnedAt != null;
-          const promotes = thread.settledOverride === "settled" || thread.snoozedUntil != null;
+          const wakes = thread.snoozedUntil != null;
           return {
             ...thread,
             pinnedAt: alreadyPinned ? thread.pinnedAt : now,
             ...(alreadyPinned || command.orderKey === undefined
               ? {}
               : { pinOrderKey: command.orderKey }),
-            settledOverride:
-              thread.settledOverride === "settled" ? "active" : thread.settledOverride,
-            settledAt: thread.settledOverride === "settled" ? null : thread.settledAt,
-            ...(thread.settledOverride === "settled" ? { unsettledAt: now } : {}),
             snoozedUntil: null,
             snoozedAt: null,
             lastSnoozeWakeAt: thread.snoozedUntil == null ? thread.lastSnoozeWakeAt : now,
-            updatedAt: alreadyPinned && !promotes ? thread.updatedAt : now,
+            updatedAt: alreadyPinned && !wakes ? thread.updatedAt : now,
           };
         }
         case "thread.unpin": {

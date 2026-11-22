@@ -3238,10 +3238,56 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         type: "thread.pin",
         commandId: CommandId.make("runtime-layer-lifecycle-pin-settled"),
         threadId,
+        orderKey: "a0",
       });
-      const pinnedProjection = yield* orchestrator.getThreadProjection(threadId);
-      assert.equal(pinnedProjection.thread.settledOverride, "active");
-      assert.isNotNull(pinnedProjection.thread.unsettledAt);
+      const pinned = shellOf(yield* orchestrator.getShellSnapshot());
+      assert.equal(pinned.settledOverride, "settled");
+      assert.isNotNull(pinned.pinnedAt);
+      assert.equal(pinned.pinOrderKey, "a0");
+
+      yield* orchestrator.dispatch({
+        type: "thread.unsettle",
+        commandId: CommandId.make("runtime-layer-lifecycle-unsettle-pinned"),
+        threadId,
+        reason: "user",
+      });
+      assert.deepEqual(shellOf(yield* orchestrator.getShellSnapshot()).pinnedAt, pinned.pinnedAt);
+      yield* orchestrator.dispatch({
+        type: "thread.settle",
+        commandId: CommandId.make("runtime-layer-lifecycle-settle-pinned"),
+        threadId,
+      });
+      const settledPinned = shellOf(yield* orchestrator.getShellSnapshot());
+      assert.equal(settledPinned.settledOverride, "settled");
+      assert.deepEqual(settledPinned.pinnedAt, pinned.pinnedAt);
+      assert.equal(settledPinned.pinOrderKey, "a0");
+
+      yield* orchestrator.dispatch({
+        type: "thread.unpin",
+        commandId: CommandId.make("runtime-layer-lifecycle-unpin-settled"),
+        threadId,
+      });
+      const unpinned = shellOf(yield* orchestrator.getShellSnapshot());
+      assert.isNull(unpinned.pinnedAt);
+      assert.equal(unpinned.settledOverride, "settled");
+      assert.deepEqual(unpinned.settledAt, settledPinned.settledAt);
+
+      yield* orchestrator.dispatch({
+        type: "thread.pin",
+        commandId: CommandId.make("runtime-layer-lifecycle-repin-settled"),
+        threadId,
+      });
+      yield* orchestrator.dispatch({
+        type: "thread.settle",
+        commandId: CommandId.make("runtime-layer-lifecycle-drop-in-settled"),
+        threadId,
+        unpin: true,
+      });
+      const dropped = shellOf(yield* orchestrator.getShellSnapshot());
+      assert.isNull(dropped.pinnedAt);
+      assert.isNull(dropped.pinOrderKey);
+      assert.equal(dropped.settledOverride, "settled");
+      assert.deepEqual(dropped.settledAt, settledPinned.settledAt);
 
       const archive = yield* orchestrator.dispatch({
         type: "thread.archive",

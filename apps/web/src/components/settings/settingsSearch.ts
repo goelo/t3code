@@ -462,9 +462,9 @@ export const SETTINGS_SEARCH_ITEMS = [
   },
   {
     id: "working-shelf",
-    title: msg("Working section"),
+    title: msg("Working threads first"),
     to: "/settings/general",
-    searchTerms: ["hide fold running monitoring threads inbox sidebar shelf"],
+    searchTerms: ["running monitoring threads in progress inbox sidebar"],
   },
   {
     id: "boring-sidebar",

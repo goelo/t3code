@@ -563,6 +563,7 @@ type SidebarThreadRowProps = {
   snoozeSupported: boolean;
   pinningSupported: boolean;
   isPinned: boolean;
+  pinnedStage?: "in-progress" | "completed" | "settled" | null;
   sortable?: SortableThreadRowBag | undefined;
   dropVerb: SidebarDropVerb | null;
   dragOverPinned: boolean;
@@ -754,7 +755,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
     isActive: props.isActive,
     isSelected,
   });
-  const topStatus =
+  const activityStatus =
     status === "preparing" || status === "working"
       ? {
           label:
@@ -766,7 +767,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
           icon: "working" as const,
           className: "text-info-foreground",
         }
-      : status === "waiting"
+      : status === "waiting" && props.pinnedStage !== "completed"
         ? {
             label: gt("Waiting"),
             icon: "waiting" as const,
@@ -808,13 +809,29 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                         icon: "woke" as const,
                         className: "text-warning-foreground",
                       }
-                    : isUnread
+                    : props.pinnedStage === "completed"
                       ? {
-                          label: gt("Done"),
+                          label: gt("Review needed"),
                           icon: "done" as const,
-                          className: "text-success-foreground",
+                          className: "text-warning-foreground",
                         }
-                      : null;
+                      : isUnread
+                        ? {
+                            label: gt("Done"),
+                            icon: "done" as const,
+                            className: "text-success-foreground",
+                          }
+                        : props.pinnedStage === "in-progress"
+                          ? {
+                              label: gt("In progress"),
+                              icon: "waiting" as const,
+                              className: "text-info-foreground",
+                            }
+                          : null;
+  const topStatus =
+    props.pinnedStage === "settled"
+      ? { label: gt("Settled"), icon: "done" as const, className: "text-muted-foreground" }
+      : activityStatus;
   const isWokeStatus = topStatus?.icon === "woke";
 
   const branchMismatch = resolveLocalCheckoutBranchMismatch({
@@ -1606,18 +1623,37 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                             render={
                               <button
                                 type="button"
-                                aria-label={gt("Settle thread")}
-                                onClick={handleSettleClick}
+                                aria-label={
+                                  variantAction === "unsettle"
+                                    ? gt("Un-settle thread")
+                                    : gt("Settle thread")
+                                }
+                                onClick={
+                                  variantAction === "unsettle"
+                                    ? handleUnsettleClick
+                                    : handleSettleClick
+                                }
                                 onPointerDown={handleActionPointerDown}
                                 className="-mr-1 inline-flex cursor-pointer items-center gap-1 rounded-md bg-transparent px-1.5 text-xs text-muted-foreground hover:text-foreground"
                               />
                             }
                           >
-                            <CheckIcon className="size-3.5" />
-                            <T>Settle</T>
+                            {variantAction === "unsettle" ? (
+                              <>
+                                <Undo2Icon className="size-3.5" />
+                                <T>Un-settle</T>
+                              </>
+                            ) : (
+                              <>
+                                <CheckIcon className="size-3.5" />
+                                <T>Settle</T>
+                              </>
+                            )}
                           </TooltipTrigger>
                           <TooltipPopup>
-                            <T>Settle thread</T>
+                            {variantAction === "unsettle"
+                              ? gt("Un-settle thread")
+                              : gt("Settle thread")}
                           </TooltipPopup>
                         </Tooltip>
                       ) : null}

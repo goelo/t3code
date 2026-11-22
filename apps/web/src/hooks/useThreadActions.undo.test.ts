@@ -51,6 +51,7 @@ const threadShell = vi.hoisted(() => ({
   title: "Thread",
   pinOrderKey: "a0",
   pinnedAt: null as string | null,
+  settledOverride: null as "settled" | null,
   snoozedUntil: null as string | null,
   projectId: "project",
   environmentId: "undo-env",
@@ -109,6 +110,7 @@ beforeEach(() => {
   router.state.location.href = "/";
   router.state.matches[0]!.params = {};
   threadShell.pinnedAt = null;
+  threadShell.settledOverride = null;
   threadShell.snoozedUntil = null;
   shellLoaded.current = true;
 });
@@ -262,6 +264,22 @@ describe("settle and snooze Undo", () => {
     await actions.unsettleThread(target);
     await undo();
     expect(commands.unsettle).toHaveBeenCalledOnce();
+  });
+
+  it("restores a settled thread's pin when undoing its move to the Settled shelf", async () => {
+    threadShell.pinnedAt = "2026-01-01T00:00:00.000Z";
+    threadShell.settledOverride = "settled";
+    await useThreadActions().settleThread(target, { unpin: true });
+    expect(commands.settle).toHaveBeenCalledExactlyOnceWith({
+      environmentId: target.environmentId,
+      input: { threadId: target.threadId, unpin: true },
+    });
+    await currentUndo()();
+    expect(commands.unsettle).not.toHaveBeenCalled();
+    expect(commands.pin).toHaveBeenCalledExactlyOnceWith({
+      environmentId: target.environmentId,
+      input: { threadId: target.threadId, orderKey: "a0" },
+    });
   });
 
   it("re-pins and re-snoozes a thread that settling had cleared", async () => {

@@ -10,11 +10,15 @@ import {
   deleteSelectedThreadEntries,
   getFallbackThreadIdAfterDelete,
   hasUnseenCompletion,
+  isSidebarThreadCompleted,
+  placeSidebarDropInFullOrder,
   resolveSidebarRowThreadId,
   orderItemsByPreferredIds,
   pinOrderKeyBetween,
   resolveSidebarSweepKeys,
   resolveSidebarThreadStatus,
+  resolveSidebarThreadSection,
+  applySidebarThreadDrop,
   resolveThreadStatusPill,
   resolveWindowTitleThreadStatus,
   resolveWorkingStartedAt,
@@ -415,6 +419,65 @@ describe("resolveWorkingStartedAt", () => {
       ).toBeNull();
     },
   );
+});
+
+describe("isSidebarThreadCompleted", () => {
+  const completed = {
+    hasActionableProposedPlan: false,
+    hasPendingApprovals: false,
+    hasPendingUserInput: false,
+    interactionMode: "plan" as const,
+    latestRun: makeLatestRun(),
+    latestUserMessageAt: "2026-03-09T10:00:00.000Z",
+    lastVisitedAt: "2026-03-09T10:06:00.000Z",
+    runtime: null,
+    goal: null,
+  } satisfies Parameters<typeof isSidebarThreadCompleted>[0];
+
+  it("keeps a successful run in the review group after the thread is read", () => {
+    expect(hasUnseenCompletion(completed)).toBe(false);
+    expect(isSidebarThreadCompleted(completed)).toBe(true);
+  });
+
+  it.each([
+    ["a new conversation", { latestRun: null }],
+    ["new user input", { latestUserMessageAt: "2026-03-09T10:06:00.000Z" }],
+    ["a failed run", { latestRun: { ...makeLatestRun(), status: "failed" } }],
+    ["an interrupted run", { latestRun: { ...makeLatestRun(), status: "interrupted" } }],
+    ["an actionable plan", { hasActionableProposedPlan: true }],
+    ["a pending answer", { hasPendingUserInput: true }],
+    ["a pending approval", { hasPendingApprovals: true }],
+    [
+      "awaited background work",
+      {
+        pendingBackgroundTasks: [
+          { taskId: "bg-1", description: "Watch build", kind: "monitor", awaited: true },
+        ],
+      },
+    ],
+  ] as const)("keeps %s in progress", (_label, overrides) => {
+    expect(isSidebarThreadCompleted({ ...completed, ...overrides })).toBe(false);
+  });
+});
+
+describe("placeSidebarDropInFullOrder", () => {
+  it("inserts by visible neighbors while preserving the order of collapsed rows", () => {
+    expect(
+      placeSidebarDropInFullOrder(
+        ["hidden-a", "target", "hidden-b", "other", "moved"],
+        ["moved", "target", "other"],
+        "moved",
+      ),
+    ).toEqual(["hidden-a", "moved", "target", "hidden-b", "other"]);
+    expect(placeSidebarDropInFullOrder(["hidden-a", "hidden-b"], ["new"], "new")).toEqual([
+      "new",
+      "hidden-a",
+      "hidden-b",
+    ]);
+    expect(
+      placeSidebarDropInFullOrder(["hidden-a", "moved", "hidden-b"], ["moved"], "moved"),
+    ).toEqual(["hidden-a", "moved", "hidden-b"]);
+  });
 });
 
 describe("resolveThreadStatusPill", () => {
@@ -904,6 +967,41 @@ describe("resolveSidebarSweepKeys", () => {
   });
 });
 
+describe("settled pins", () => {
+  it("keeps a settled pin in one section and returns it to Settled when unpinned", () => {
+    const old = "2026-09-12T09:00:00.000Z";
+    const now = "2026-09-12T10:00:00.000Z";
+    const settled = {
+      settledOverride: "settled" as const,
+      settledAt: old,
+      unsettledAt: null,
+      pinnedAt: null,
+      pinOrderKey: null,
+      activeOrderKey: null,
+      snoozedAt: null,
+      snoozedUntil: null,
+    };
+    const pinned = applySidebarThreadDrop(settled, "pinned", now, "a0");
+    expect(pinned).toMatchObject({ settledOverride: "settled", settledAt: old, pinnedAt: now });
+    expect(resolveSidebarThreadSection({ snoozed: false, pinned: true, settled: true })).toBe(
+      "pinned",
+    );
+    expect(resolveSidebarThreadSection({ snoozed: false, pinned: false, settled: true })).toBe(
+      "settled",
+    );
+    expect(applySidebarThreadDrop(pinned, "settled", now)).toEqual(settled);
+    expect(
+      shouldNavigateAfterThreadPark({
+        action: "settle",
+        threadKey: "id",
+        currentThreadKey: "id",
+        now,
+        thread: { ...pinned, hasPendingApprovals: false, hasPendingUserInput: false },
+      }),
+    ).toBe(false);
+  });
+});
+
 describe("navigation after parking a thread", () => {
   it.each([
     ["settle", "settled", null, "thread", true],
@@ -932,6 +1030,7 @@ describe("navigation after parking a thread", () => {
           now: "2026-09-12T10:00:00.000Z",
           thread: {
             settledOverride,
+            pinnedAt: null,
             snoozedUntil,
             snoozedAt: null,
             session: null,
@@ -1108,21 +1207,21 @@ describe("Working shelf (beta)", () => {
       section,
     });
     const items: readonly SidebarListItem[] = [
-      marker("working-header"),
-      row("w1", "working"),
       marker("recent-header"),
       marker("pinned-header"),
       row("p1", "pinned"),
       marker("pinned-divider"),
       row("a1", "active"),
+      row("w1", "working"),
       row("a2", "active"),
+      marker("completed-header"),
       marker("settled-header"),
       row("s1", "settled"),
     ];
 
     it("never drops into the Working shelf, and keeps it out of the inbox order", () => {
       expect(resolveSidebarDropTarget(items, "a1", "w1")).toBeNull();
-      expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("working-header"))).toBeNull();
+      expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("completed-header"))).toBeNull();
       expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("recent-header"))).toBeNull();
       expect(resolveSidebarDropTarget(items, "a1", sidebarMarkerId("pinned-header"))).toEqual({
         section: "pinned",

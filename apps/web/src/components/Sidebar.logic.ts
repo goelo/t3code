@@ -2,7 +2,10 @@ import { translateMessage } from "../i18n/translateMessage";
 import { msg } from "gt-react";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { resolveThreadWorkingStartedAt } from "@t3tools/client-runtime/state/models";
+import {
+  resolveThreadWorkingStartedAt,
+  threadRuntimeIsActive,
+} from "@t3tools/client-runtime/state/models";
 import { isShownUnderParent } from "@t3tools/client-runtime/state/threads";
 import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import { threadPullRequestSearchTerms } from "@t3tools/shared/threadPullRequests";
@@ -61,13 +64,15 @@ export function shouldNavigateAfterThreadPark(input: {
   readonly currentThreadKey: string | null;
   readonly action: "settle" | "snooze";
   readonly now: string;
-  readonly thread: (ThreadSnoozeShell & Pick<SidebarThreadSummary, "settledOverride">) | null;
+  readonly thread:
+    | (ThreadSnoozeShell & Pick<SidebarThreadSummary, "settledOverride" | "pinnedAt">)
+    | null;
 }): boolean {
   return (
     input.threadKey === input.currentThreadKey &&
     input.thread !== null &&
     (input.action === "settle"
-      ? input.thread.settledOverride === "settled"
+      ? input.thread.settledOverride === "settled" && input.thread.pinnedAt == null
       : effectiveSnoozed(input.thread, { now: input.now }))
   );
 }
@@ -199,8 +204,8 @@ export function resolveSidebarThreadSection(input: {
   readonly pinned: boolean;
 }): SidebarSection {
   if (input.snoozed) return "snoozed";
-  if (input.settled) return "settled";
   if (input.pinned) return "pinned";
+  if (input.settled) return "settled";
   return "active";
 }
 
@@ -210,9 +215,9 @@ export type SidebarListMarker =
   | "pinned-header"
   | "recent-header"
   | "active-placeholder"
+  | "completed-header"
   | "settled-placeholder"
   | "pinned-divider"
-  | "working-header"
   | "snoozed-header"
   | "settled-header";
 
@@ -235,7 +240,6 @@ function sectionAtSidebarSlot(items: readonly SidebarListItem[], index: number):
     if (item.kind !== "marker") continue;
     if (item.marker === "pinned-header") section = "pinned";
     else if (item.marker === "pinned-divider") section = "active";
-    else if (item.marker === "working-header") section = "working";
     else if (item.marker === "snoozed-header") section = "snoozed";
     else if (item.marker === "settled-header") section = "settled";
   }
@@ -260,7 +264,7 @@ export function resolveSidebarDropTarget(
   if (
     over.kind === "thread"
       ? over.section === "working"
-      : over.marker === "working-header" || over.marker === "recent-header"
+      : over.marker === "recent-header" || over.marker === "completed-header"
   )
     return null;
   const moved = items.filter((_, index) => index !== activeIndex);
@@ -303,6 +307,22 @@ type SidebarThreadDropPlan =
       readonly unsnooze: boolean;
     }
   | { readonly kind: "settle" };
+
+export function placeSidebarDropInFullOrder(
+  order: readonly string[],
+  visibleOrder: readonly string[],
+  movedKey: string,
+): readonly string[] {
+  const movedIndex = visibleOrder.indexOf(movedKey);
+  if (movedIndex < 0) return order;
+  const before = visibleOrder[movedIndex + 1];
+  const after = visibleOrder[movedIndex - 1];
+  if (before === undefined && after === undefined && order.includes(movedKey)) return order;
+  const rest = order.filter((key) => key !== movedKey);
+  const insertAt =
+    before !== undefined ? rest.indexOf(before) : after !== undefined ? rest.indexOf(after) + 1 : 0;
+  return rest.toSpliced(insertAt, 0, movedKey);
+}
 
 export type SidebarDropVerb = "pin" | "unpin" | "settle" | "unsettle" | "wake";
 
@@ -523,9 +543,10 @@ export function applySidebarThreadDrop<
       unsettledAt: null,
     };
   }
-  const resumed = wasSettled
-    ? { ...awake, settledOverride: "active" as const, settledAt: null, unsettledAt: now }
-    : awake;
+  const resumed =
+    section === "active" && wasSettled
+      ? { ...awake, settledOverride: "active" as const, settledAt: null, unsettledAt: now }
+      : awake;
   return {
     ...resumed,
     pinnedAt: section === "pinned" ? (thread.pinnedAt ?? now) : null,
@@ -795,6 +816,28 @@ export function resolveThreadLastVisitedAt(
   // servers.
   if (serverLastVisitedAt === undefined) return localLastVisitedAt;
   return serverLastVisitedAt ?? undefined;
+}
+
+export function isSidebarThreadCompleted(
+  thread: ThreadStatusInput & Pick<SidebarThreadSummary, "latestUserMessageAt" | "goal">,
+): boolean {
+  const run = thread.latestRun;
+  const completedAt = Date.parse(run?.completedAt ?? "");
+  const lastMessageAt = Date.parse(thread.latestUserMessageAt ?? "");
+  return (
+    run?.status === "completed" &&
+    Number.isFinite(completedAt) &&
+    !(lastMessageAt > completedAt) &&
+    !threadRuntimeIsActive(thread.runtime) &&
+    thread.runtime?.status !== "failed" &&
+    !thread.hasPendingApprovals &&
+    !thread.hasPendingUserInput &&
+    thread.pendingSubagentRequest == null &&
+    (thread.pendingGuestMessageCount ?? 0) === 0 &&
+    !(thread.interactionMode === "plan" && thread.hasActionableProposedPlan) &&
+    thread.goal?.status !== "active" &&
+    !backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])
+  );
 }
 
 export function hasUnseenCompletion(thread: ThreadStatusInput): boolean {

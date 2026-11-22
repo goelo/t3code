@@ -257,11 +257,25 @@ describe("interrupt turn", () => {
 
 describe("remote thread lifecycle commands", () => {
   const actions = [
-    ["settle", {}, { settledOverride: "settled", pinnedAt: null, snoozedUntil: null }],
+    [
+      "settle",
+      {},
+      { settledOverride: "settled", pinnedAt: NOW, pinOrderKey: "a", snoozedUntil: null },
+    ],
+    ["settle", { unpin: true }, { settledOverride: "settled", pinnedAt: null, pinOrderKey: null }],
     ["unsettle", { reason: "user" }, { settledOverride: "active", settledAt: null }],
     ["snooze", { snoozedUntil: "2099-01-01T00:00:00.000Z" }, { snoozedUntil: FUTURE }],
     ["unsnooze", { reason: "user" }, { snoozedUntil: null, snoozedAt: null }],
-    ["pin", { orderKey: "a" }, { pinnedAt: expect.any(Object), pinOrderKey: "a" }],
+    [
+      "pin",
+      { orderKey: "a" },
+      {
+        pinnedAt: expect.any(Object),
+        pinOrderKey: "a",
+        settledOverride: "settled",
+        settledAt: NOW,
+      },
+    ],
     ["unpin", {}, { pinnedAt: null, pinOrderKey: null }],
     ["setAutoSettle", { enabled: false }, { autoSettleDisabledAt: expect.any(Object) }],
     ["reorderPin", { orderKey: "b" }, { pinOrderKey: "b" }],
@@ -306,6 +320,8 @@ describe("remote thread lifecycle commands", () => {
         });
         expect(h.registry.get(h.visibleAtom)?.threads[0]).toMatchObject(expected);
         const request = yield* Queue.take(h.requests);
+        if ("unpin" in input)
+          expect(request.command).toMatchObject({ type: "thread.settle", unpin: true });
         expect(h.registry.get(source)).toBe(initial);
         yield* Deferred.fail(request.reply, new Error("Remote rejected the action"));
         expect((yield* Effect.promise(() => result))._tag).toBe("Failure");
@@ -335,42 +351,48 @@ describe("remote thread lifecycle commands", () => {
     }),
   );
 
-  it.effect("keeps the preview after acknowledgement until the matching shell update arrives", () =>
-    Effect.gen(function* () {
-      const h = yield* makeHarness();
-      const result = h.commands.settle.run(h.registry, {
-        environmentId: ENVIRONMENT_ID,
-        input: { threadId: THREAD_ID },
-      });
-      const request = yield* Queue.take(h.requests);
-      yield* Deferred.succeed(request.reply, { sequence: 3 });
-      expect((yield* Effect.promise(() => result))._tag).toBe("Success");
-      const changed = {
-        ...SNAPSHOT,
-        snapshotSequence: 2,
-        threads: [{ ...SNAPSHOT.threads[0]!, title: "Renamed remotely" }],
-      };
-      h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), changed);
-      expect(h.registry.get(h.visibleAtom)?.threads[0]).toMatchObject({
-        title: "Renamed remotely",
-        settledOverride: "settled",
-      });
-      const confirmed = {
-        ...changed,
-        snapshotSequence: 3,
-        threads: [
-          {
-            ...changed.threads[0]!,
-            settledOverride: "settled" as const,
-            settledAt: DateTime.makeUnsafe("2026-09-12T12:00:00.000Z"),
-          },
-        ],
-      };
-      h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), confirmed);
-      expect(h.registry.get(h.visibleAtom)).toBe(confirmed);
-      h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), { ...SNAPSHOT, snapshotSequence: 4 });
-      expect(h.registry.get(h.visibleAtom)?.threads[0]?.settledOverride).toBeNull();
-    }),
+  it.effect.each([false, true])(
+    "reconciles an acknowledged settle to the server pin state (keeps pin: %s)",
+    (serverKeepsPin) =>
+      Effect.gen(function* () {
+        const h = yield* makeHarness();
+        const pinned = { ...SNAPSHOT.threads[0]!, pinnedAt: NOW, pinOrderKey: "a" };
+        h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), { ...SNAPSHOT, threads: [pinned] });
+        const result = h.commands.settle.run(h.registry, {
+          environmentId: ENVIRONMENT_ID,
+          input: { threadId: THREAD_ID },
+        });
+        const request = yield* Queue.take(h.requests);
+        yield* Deferred.succeed(request.reply, { sequence: 3 });
+        expect((yield* Effect.promise(() => result))._tag).toBe("Success");
+        const changed = {
+          ...SNAPSHOT,
+          snapshotSequence: 2,
+          threads: [{ ...pinned, title: "Renamed remotely" }],
+        };
+        h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), changed);
+        expect(h.registry.get(h.visibleAtom)?.threads[0]).toMatchObject({
+          title: "Renamed remotely",
+          settledOverride: "settled",
+          pinnedAt: NOW,
+        });
+        const confirmed = {
+          ...changed,
+          snapshotSequence: 3,
+          threads: [
+            {
+              ...changed.threads[0]!,
+              ...(serverKeepsPin ? {} : { pinnedAt: null, pinOrderKey: null }),
+              settledOverride: "settled" as const,
+              settledAt: DateTime.makeUnsafe("2026-09-12T12:00:00.000Z"),
+            },
+          ],
+        };
+        h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), confirmed);
+        expect(h.registry.get(h.visibleAtom)).toBe(confirmed);
+        h.registry.set(h.snapshotAtom(ENVIRONMENT_ID), { ...SNAPSHOT, snapshotSequence: 4 });
+        expect(h.registry.get(h.visibleAtom)?.threads[0]?.settledOverride).toBeNull();
+      }),
   );
 
   it.effect(
