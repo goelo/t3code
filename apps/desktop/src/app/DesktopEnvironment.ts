@@ -13,6 +13,11 @@ import * as Path from "effect/Path";
 
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopConfig from "./DesktopConfig.ts";
+import {
+  DESKTOP_ENHANCER_BACKEND_PORT,
+  DESKTOP_ENHANCER_DISPLAY_NAME,
+  DESKTOP_ENHANCER_NAME,
+} from "./DesktopEnhancer.ts";
 import { resolveLinuxDesktopEntryName } from "./DesktopEarlyElectronStartup.ts";
 import { resolveDesktopBaseDir, resolveDesktopStateDir } from "./DesktopStatePaths.ts";
 import { isNightlyDesktopVersion } from "../updates/updateChannels.ts";
@@ -64,6 +69,7 @@ export class DesktopEnvironment extends Context.Service<
     readonly devServerUrl: Option.Option<URL>;
     readonly devRemoteT3ServerEntryPath: Option.Option<string>;
     readonly configuredBackendPort: Option.Option<number>;
+    readonly backendPortScanStart: number;
     readonly commitHashOverride: Option.Option<string>;
     readonly otlpTracesUrl: Option.Option<string>;
     readonly otlpMetricsUrl: Option.Option<string>;
@@ -148,6 +154,7 @@ const make = Effect.fn("desktop.environment.make")(function* (
   const homeDirectory = input.homeDirectory;
   const devServerUrl = config.devServerUrl;
   const isDevelopment = Option.isSome(devServerUrl);
+  const isEnhancer = input.platform === "darwin" && input.isPackaged && !isDevelopment;
   const appDataDirectory =
     input.platform === "win32"
       ? Option.getOrElse(config.appDataDirectory, () =>
@@ -156,21 +163,23 @@ const make = Effect.fn("desktop.environment.make")(function* (
       : input.platform === "darwin"
         ? path.join(homeDirectory, "Library", "Application Support")
         : Option.getOrElse(config.xdgConfigHome, () => path.join(homeDirectory, ".config"));
-  const baseDir = resolveDesktopBaseDir({
-    homeDirectory,
-    joinPath: path.join,
-    t3Home: config.t3Home,
-  });
+  const baseDir = isEnhancer
+    ? path.join(homeDirectory, ".t3-enhancer")
+    : resolveDesktopBaseDir({ homeDirectory, joinPath: path.join, t3Home: config.t3Home });
   const rootDir = path.resolve(input.dirname, "../../..");
   const appRoot = input.isPackaged ? input.appPath : rootDir;
   const serverRoot =
     input.isPackaged && input.platform === "win32"
       ? path.join(input.resourcesPath, "server.asar")
       : appRoot;
-  const branding = resolveDesktopAppBranding({
-    isDevelopment,
-    appVersion: input.appVersion,
-  });
+  const baseBranding = resolveDesktopAppBranding({ isDevelopment, appVersion: input.appVersion });
+  const branding = isEnhancer
+    ? {
+        ...baseBranding,
+        baseName: DESKTOP_ENHANCER_NAME,
+        displayName: DESKTOP_ENHANCER_DISPLAY_NAME,
+      }
+    : baseBranding;
   const displayName = branding.displayName;
   const stateDir = resolveDesktopStateDir({
     baseDir,
@@ -218,6 +227,7 @@ const make = Effect.fn("desktop.environment.make")(function* (
     devServerUrl,
     devRemoteT3ServerEntryPath: config.devRemoteT3ServerEntryPath,
     configuredBackendPort: config.configuredBackendPort,
+    backendPortScanStart: isEnhancer ? DESKTOP_ENHANCER_BACKEND_PORT : 3773,
     commitHashOverride: config.commitHashOverride,
     otlpTracesUrl: config.otlpTracesUrl,
     otlpMetricsUrl: config.otlpMetricsUrl,

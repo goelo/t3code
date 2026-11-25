@@ -25,6 +25,7 @@ import {
 } from "react";
 import { ModelListRow } from "./ModelListRow";
 import { ModelPickerSidebar } from "./ModelPickerSidebar";
+import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
 import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
 import { getProviderStatusMessage, hasProviderSetup } from "./ProviderStatusBanner";
 import {
@@ -332,6 +333,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   workspaceCwd?: string | null;
   activeInstanceId: ProviderInstanceId;
   model: string;
+  enhanced?: boolean;
   selectedModels?: ReadonlyArray<{ instanceId: ProviderInstanceId; model: string }>;
   onToggleModel?: (instanceId: ProviderInstanceId, model: string) => void;
   lockedProvider: ProviderDriverKind | null;
@@ -366,6 +368,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     onOpenProviderSetup,
   } = props;
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAllProviders, setShowAllProviders] = useState(false);
   const modelListRef = useRef<LegendListRef | null>(null);
   const pickerContentRef = useRef<HTMLDivElement>(null);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- publishes this picker's mount to global keydown handlers
@@ -418,6 +421,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   const [selectedInstanceId, setSelectedInstanceId] = useState<ProviderInstanceId | "favorites">(
     () => {
       if (
+        props.enhanced ||
         props.lockedProvider !== null ||
         activeInstanceHasSelectableUnavailableModel ||
         activeInstanceNeedsSetup
@@ -643,7 +647,16 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     }
     return [...available, ...disabled];
   })();
-  const showSidebar = !isSearching && sidebarInstanceEntries.length > 0;
+  const showSidebar = !props.enhanced && !isSearching && sidebarInstanceEntries.length > 0;
+  const readyProviders = props.enhanced
+    ? sidebarInstanceEntries.filter(isProviderInstancePickerReady)
+    : [];
+  const providerGrid = showAllProviders
+    ? readyProviders
+    : [
+        ...readyProviders.filter((entry) => entry.instanceId === selectedInstanceId),
+        ...readyProviders.filter((entry) => entry.instanceId !== selectedInstanceId),
+      ].slice(0, 4);
   const instanceOrder = instanceEntries.map((entry) => entry.instanceId);
 
   const filteredModels = (() => {
@@ -846,11 +859,12 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
         ref={pickerContentRef}
         className={cn(
           "relative flex w-screen max-w-90 flex-row overflow-hidden",
+          props.enhanced && "h-[min(25rem,var(--available-height,25rem))] max-w-80 flex-col",
           props.docked ? "max-sm:h-56 max-sm:w-full max-sm:max-w-none" : "max-h-86.5",
         )}
         // Docked, the popup sets the height; a minimum here would overflow short windows.
         style={
-          props.docked
+          props.docked || props.enhanced
             ? undefined
             : isSearching
               ? { height: searchHeight }
@@ -860,6 +874,46 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
         }
         data-model-picker-content="true"
       >
+        {providerGrid.length > 0 ? (
+          <div className="max-h-48 shrink-0 overflow-y-auto border-b border-border/70 p-2">
+            <div className="grid grid-cols-2 gap-1.5" aria-label={gt("Providers")} role="group">
+              {providerGrid.map((entry) => (
+                <button
+                  key={entry.instanceId}
+                  type="button"
+                  aria-pressed={entry.instanceId === selectedInstanceId}
+                  disabled={lockedDisabledInstanceIds?.has(entry.instanceId)}
+                  onClick={() => {
+                    setSearchQuery("");
+                    handleSelectInstance(entry.instanceId);
+                  }}
+                  className="flex min-w-0 items-center gap-1.5 rounded-md border border-border px-2 py-1 text-start text-xs hover:bg-accent aria-pressed:border-primary/50 aria-pressed:bg-primary/10 disabled:opacity-50"
+                >
+                  <ProviderInstanceIcon
+                    driverKind={entry.driverKind}
+                    displayName={entry.displayName}
+                    accentColor={entry.accentColor}
+                    acpRegistryAgentId={entry.acpRegistryAgentId}
+                    acpRegistryIconUrl={entry.acpRegistryIconUrl}
+                    className="size-4 shrink-0"
+                    iconClassName="size-4"
+                  />
+                  <span className="truncate">{entry.displayName}</span>
+                </button>
+              ))}
+            </div>
+            {readyProviders.length > 4 ? (
+              <button
+                type="button"
+                aria-expanded={showAllProviders}
+                onClick={() => setShowAllProviders(!showAllProviders)}
+                className="mt-1 rounded px-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {showAllProviders ? gt("Show fewer providers") : gt("Show all providers")}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {showSidebar && (
           <ModelPickerSidebar
             selectedInstanceId={selectedInstanceId}

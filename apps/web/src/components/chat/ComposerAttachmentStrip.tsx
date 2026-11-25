@@ -7,7 +7,19 @@ import type {
   SnapShotSource,
 } from "@t3tools/contracts";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { CircleAlertIcon, ImageIcon, PaperclipIcon, PlayIcon, XIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  FileTextIcon,
+  FolderIcon,
+  ImageIcon,
+  MessageSquareIcon,
+  PaperclipIcon,
+  PlayIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  TerminalIcon,
+  XIcon,
+} from "lucide-react";
 import { type ComponentProps, useLayoutEffect, useRef } from "react";
 
 import {
@@ -33,6 +45,15 @@ import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
 import { AttachmentImage } from "../media/AttachmentImage";
 import { Button } from "../ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
+import {
+  Menu,
+  MenuGroup,
+  MenuGroupLabel,
+  MenuItem,
+  MenuPopup,
+  MenuSeparator,
+  MenuTrigger,
+} from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ComposerImageThumbnail } from "./ComposerImageThumbnail";
 import { composerFloatingLayerProps } from "./composerEventScope";
@@ -709,15 +730,33 @@ export function ComposerQueuedAttachmentRow({
   );
 }
 
-export function ComposerAttachButton({
+export function ComposerAddControl({
   addComposerAttachments,
+  canAttach,
   focusComposer,
+  actions,
 }: {
   readonly addComposerAttachments: (files: File[]) => Promise<boolean>;
+  readonly canAttach: boolean;
   readonly focusComposer: () => void;
+  readonly actions?:
+    | {
+        readonly mention: () => void;
+        readonly skill: () => void;
+        readonly sideChat: (() => void) | undefined;
+        readonly freshSession: (() => void) | undefined;
+        readonly slashCommands: () => void;
+      }
+    | undefined;
 }) {
   const gt = useGT();
   const inputRef = useRef<HTMLInputElement>(null);
+  const returnFocusToTrigger = useRef(true);
+  const selectAction = (action: () => void) => {
+    returnFocusToTrigger.current = false;
+    action();
+  };
+  const openFilePicker = () => inputRef.current?.click();
   return (
     <>
       <input
@@ -736,26 +775,92 @@ export function ComposerAttachButton({
           });
         }}
       />
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onPointerDown={(event) => event.preventDefault()}
-              onClick={() => inputRef.current?.click()}
-              aria-label={gt("Attach files")}
-            />
-          }
+      {actions ? (
+        <Menu
+          modal={false}
+          onOpenChange={(open) => {
+            if (open) returnFocusToTrigger.current = true;
+          }}
         >
-          {/* The clip's weight sits in its upper loop; 1px down reads as centered on the row. */}
-          <PaperclipIcon className="translate-y-px" />
-        </TooltipTrigger>
-        <TooltipPopup>
-          <T>Attach files</T>
-        </TooltipPopup>
-      </Tooltip>
+          <MenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon-sm"
+                aria-label={gt("Composer actions")}
+              />
+            }
+          >
+            <PlusIcon />
+          </MenuTrigger>
+          <MenuPopup
+            align="start"
+            side="top"
+            {...composerFloatingLayerProps}
+            finalFocus={() => returnFocusToTrigger.current}
+          >
+            <MenuGroup>
+              <MenuGroupLabel>{gt("Add")}</MenuGroupLabel>
+              <MenuItem disabled={!canAttach} onClick={openFilePicker}>
+                <PaperclipIcon />
+                {gt("Attach files")}
+              </MenuItem>
+              <MenuItem onClick={() => selectAction(actions.mention)}>
+                <FolderIcon />
+                {gt("Reference workspace files")}
+              </MenuItem>
+              <MenuItem onClick={() => selectAction(actions.skill)}>
+                <FileTextIcon />
+                {gt("Skills and extensions")}
+              </MenuItem>
+            </MenuGroup>
+            <MenuSeparator />
+            <MenuGroup>
+              <MenuGroupLabel>{gt("Commands")}</MenuGroupLabel>
+              <MenuItem
+                disabled={!actions.sideChat}
+                onClick={() => actions.sideChat && selectAction(actions.sideChat)}
+              >
+                <MessageSquareIcon />
+                {gt("Side chat")}
+              </MenuItem>
+              <MenuItem
+                disabled={!actions.freshSession}
+                onClick={() => actions.freshSession && selectAction(actions.freshSession)}
+              >
+                <RotateCcwIcon />
+                {gt("Start a fresh context")}
+              </MenuItem>
+              <MenuItem onClick={() => selectAction(actions.slashCommands)}>
+                <TerminalIcon />
+                {gt("Slash commands")}
+              </MenuItem>
+            </MenuGroup>
+          </MenuPopup>
+        </Menu>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={openFilePicker}
+                aria-label={gt("Attach files")}
+              />
+            }
+          >
+            {/* The clip's weight sits in its upper loop; 1px down reads as centered on the row. */}
+            <PaperclipIcon className="translate-y-px" />
+          </TooltipTrigger>
+          <TooltipPopup>
+            <T>Attach files</T>
+          </TooltipPopup>
+        </Tooltip>
+      )}
     </>
   );
 }

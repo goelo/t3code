@@ -112,6 +112,7 @@ it.effect.each([false, true])(
             isPackaged: true,
             stateDir: "/isolated/userdata",
             configuredBackendPort: Option.some(3773),
+            backendPortScanStart: 3773,
             defaultDesktopSettings: { serverExposureMode: "local-only" },
           } as unknown as DesktopEnvironment.DesktopEnvironment["Service"]),
           Effect.provideService(DesktopPreReadyPlatform.DesktopPreReadyElectronOptions, {

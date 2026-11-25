@@ -659,8 +659,32 @@ export interface StableMessagesTimelineRowsState {
   result: MessagesTimelineRow[];
 }
 
-function workGroupId(timelineEntryId: string): string {
+export function workGroupId(timelineEntryId: string): string {
   return `work-group:${timelineEntryId}`;
+}
+
+export function timelineFoldDescendants(
+  entries: readonly TimelineEntry[],
+  parent: { runId: RunId } | { attemptId: RunAttemptId },
+  foldedRunsByEntryId?: ReadonlyMap<string, RunId>,
+) {
+  const attempts = new Set<RunAttemptId>();
+  const workGroups = new Set<string>();
+  const workEntries = new Set<string>();
+  for (const entry of entries) {
+    const belongs =
+      "attemptId" in parent
+        ? entry.attempt?.id === parent.attemptId
+        : (foldedRunsByEntryId?.get(entry.id) ??
+            entry.attempt?.runId ??
+            timelineEntryRunId(entry)) === parent.runId;
+    if (!belongs) continue;
+    if (entry.attempt) attempts.add(entry.attempt.id);
+    if (entry.kind !== "work") continue;
+    workGroups.add(workGroupId(entry.id));
+    workEntries.add(entry.entry.id);
+  }
+  return { attempts, workGroups, workEntries };
 }
 
 function expandedWorkGroupRow(

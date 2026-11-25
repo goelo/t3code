@@ -86,6 +86,7 @@ import {
   resolveTimelineMinimapVisibleRange,
   resolveTimelineMinimapHitStripWidth,
   timelineTurnFoldRunIdsByEntryId,
+  timelineFoldDescendants,
   liveAnswerPreview,
   type MessagesTimelineRow,
   type TimelineLatestRun,
@@ -96,7 +97,7 @@ import { TooltipScrollDismissArea } from "../ui/tooltip";
 import { WorktreeSetupCard } from "./WorktreeSetupCard";
 import { useOpenPrLink } from "~/lib/openPullRequestLink";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
-import { cn } from "~/lib/utils";
+import { cn, isMacPlatform } from "~/lib/utils";
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 import { type HandoffTimelineRun } from "./V2LifecycleRow";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
@@ -555,8 +556,37 @@ const ConversationTimeline = memo(function ConversationTimeline({
   };
 
   // Turn and attempt folds reveal later rows rather than growing their own row.
+  const resetNestedDisclosures =
+    window.desktopBridge !== undefined && isMacPlatform(navigator.platform);
+  const clearFoldDescendants = (parent: { runId: RunId } | { attemptId: RunAttemptId }) => {
+    const runsByEntry =
+      "runId" in parent
+        ? timelineTurnFoldRunIdsByEntryId({
+            timelineEntries,
+            latestRun,
+            isWorking,
+            runlessWorkActive,
+            runningRunId,
+            toolCallVisibility,
+          })
+        : undefined;
+    const { attempts, workGroups, workEntries } = timelineFoldDescendants(
+      timelineEntries,
+      parent,
+      runsByEntry,
+    );
+    if ("runId" in parent) {
+      setExpandedAttemptIds((existing) => new Set([...existing].filter((id) => !attempts.has(id))));
+    }
+    setExpandedWorkGroupIds(
+      (existing) => new Set([...existing].filter((id) => !workGroups.has(id))),
+    );
+    for (const id of workEntries) workGroupViewState.expandedEntries.delete(id);
+    for (const id of workGroups) workGroupViewState.scrollPositions.delete(`${id}:details`);
+  };
   const onToggleTurnFold = (runId: RunId) => {
     preserveDisclosurePosition(`turn-fold:${runId}`);
+    if (resetNestedDisclosures && expandedRunIds.has(runId)) clearFoldDescendants({ runId });
     setExpandedRunIds((existing) => {
       const next = new Set(existing);
       if (next.has(runId)) {
@@ -572,6 +602,19 @@ const ConversationTimeline = memo(function ConversationTimeline({
       anchorKey,
       expandedWorkGroupIds.has(groupId) ? undefined : { contentKey: `${groupId}:details` },
     );
+    if (resetNestedDisclosures && expandedWorkGroupIds.has(groupId)) {
+      const detailId = `${groupId}:details`;
+      for (const row of rows) {
+        if (
+          (row.kind === "work" && row.id === detailId) ||
+          (row.kind === "work-live" && row.groupId === groupId)
+        ) {
+          for (const entry of row.groupedEntries)
+            workGroupViewState.expandedEntries.delete(entry.id);
+        }
+      }
+      workGroupViewState.scrollPositions.delete(detailId);
+    }
     setExpandedWorkGroupIds((existing) => {
       const next = new Set(existing);
       if (next.has(groupId)) {
@@ -584,6 +627,8 @@ const ConversationTimeline = memo(function ConversationTimeline({
   };
   const onToggleAttemptFold = (attemptId: RunAttemptId) => {
     preserveDisclosurePosition(`attempt-fold:${attemptId}`);
+    if (resetNestedDisclosures && expandedAttemptIds.has(attemptId))
+      clearFoldDescendants({ attemptId });
     setExpandedAttemptIds((existing) => {
       const next = new Set(existing);
       if (next.has(attemptId)) {

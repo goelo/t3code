@@ -75,6 +75,7 @@ import {
   type ComposerSubmissionIntent,
   collapseExpandedComposerCursor,
   composerRequiresModifier,
+  composerSlashMenuEdit,
   composerSubmissionIntentForKey,
   composerStateAtPromptEnd,
   detectComposerTrigger,
@@ -202,7 +203,7 @@ import {
   composerSuggestionOptionId,
 } from "./ComposerCommandMenu";
 import {
-  ComposerAttachButton,
+  ComposerAddControl,
   ComposerAttachmentFileList,
   ComposerAttachmentMediaRow,
   ComposerFilePreviewDialog,
@@ -210,6 +211,11 @@ import {
   ComposerRestingImagePreviews,
 } from "./ComposerAttachmentStrip";
 import { ComposerPrimaryActions } from "./ComposerPrimaryActions";
+import {
+  ComposerContextMeter,
+  ComposerQuotaMeter,
+  type ComposerUsageInput,
+} from "./ComposerUsageMeters";
 import { ComposerFooterPrimaryActions } from "./ComposerFooterControls";
 import { ComposerPendingUserInputPanel } from "./ComposerPendingUserInputPanel";
 import { resolveComposerMenuActiveItemId } from "./composerMenuHighlight";
@@ -366,6 +372,7 @@ export interface ChatComposerProps {
   activeThreadId: ThreadId | null;
   activeThread: Thread | undefined;
   activeThreadRuns: ReadonlyArray<OrchestrationV2Run>;
+  enhancerUsage?: ComposerUsageInput;
   promptHistoryEntries: ReadonlyArray<TimelineEntry>;
   forceExpandedOnMobile: boolean;
   projectSelectionRequired: boolean;
@@ -1167,6 +1174,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     activePendingProgress?.activeQuestion?.allowCustomAnswer === false;
   const showComposerTopDrawer = pendingUserInputs.length > 0;
   const showCollapsedMobilePromptRow = isComposerCollapsedMobile;
+  const enhancedDesktop = window.desktopBridge !== undefined && isMacPlatform(navigator.platform);
   const showComposerAttachAction =
     fileStagingLimit !== null &&
     (!activePendingProgress ||
@@ -2416,6 +2424,12 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       : expandedControlsIconOnlyBlockCount;
   const composerControls = (
     <ComposerControlsBar
+      enhancedDesktop={enhancedDesktop}
+      contextMeter={
+        enhancedDesktop && props.enhancerUsage ? (
+          <ComposerContextMeter usage={props.enhancerUsage} />
+        ) : null
+      }
       environmentId={environmentId}
       workspaceCwd={gitCwd}
       routeKind={routeKind}
@@ -3268,12 +3282,54 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         onRemoveFile={removeComposerFileFromDraft}
       />
     ) : null;
-  const composerAttachButton = showComposerAttachAction ? (
-    <ComposerAttachButton
-      addComposerAttachments={addComposerAttachments}
-      focusComposer={focusComposer}
-    />
-  ) : null;
+  const showComposerAddMenu =
+    enhancedDesktop &&
+    !projectSelectionRequired &&
+    !isEditingQueuedMessage &&
+    !isComposerApprovalState &&
+    pendingUserInputs.length === 0;
+  const composerAddControl =
+    showComposerAttachAction || showComposerAddMenu ? (
+      <ComposerAddControl
+        addComposerAttachments={addComposerAttachments}
+        canAttach={showComposerAttachAction}
+        focusComposer={focusComposer}
+        actions={
+          showComposerAddMenu
+            ? {
+                mention: () => insertComposerTextAtEnd("@", { ensureLeadingBoundary: true }),
+                skill: () => insertComposerTextAtEnd("$", { ensureLeadingBoundary: true }),
+                sideChat:
+                  props.sideChatAvailable && !props.sideChatDisabledReason
+                    ? () => {
+                        const draft = promptRef.current;
+                        if (!/^\s*\/(?:side|btw)(?:\s|$)/u.test(draft)) {
+                          applyPromptReplacement(0, 0, "/btw ", {
+                            expandedCursorAfterReplace: draft.length + "/btw ".length,
+                          });
+                        } else {
+                          focusComposer();
+                        }
+                      }
+                    : undefined,
+                freshSession: props.onFreshSession
+                  ? () => {
+                      props.onFreshSession?.();
+                      focusComposer();
+                    }
+                  : undefined,
+                slashCommands: () => {
+                  const { start, replacement, cursor } = composerSlashMenuEdit(promptRef.current);
+                  resetComposerTrigger(null);
+                  applyPromptReplacement(start, start, replacement, {
+                    expandedCursorAfterReplace: cursor,
+                  });
+                },
+              }
+            : undefined
+        }
+      />
+    ) : null;
   return (
     <form
       ref={composerFormRef}
@@ -3635,15 +3691,24 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
               <div
                 data-chat-composer-footer="true"
                 className={cn(
-                  "flex min-w-0 flex-nowrap items-center overflow-visible px-2 pb-2",
+                  "@container/composer-footer flex min-w-0 flex-nowrap items-center overflow-visible px-2 pb-2",
                   pendingUserInputs.length > 0 && "pt-2",
                   showMobilePendingAnswerActions &&
                     speechInput.state.phase === "idle" &&
                     "hidden sm:flex",
                 )}
               >
-                {composerAttachButton && !dictationTakesFooter ? (
-                  <div className="me-2">{composerAttachButton}</div>
+                {composerAddControl && !dictationTakesFooter ? (
+                  <div className="me-2">{composerAddControl}</div>
+                ) : null}
+                {enhancedDesktop &&
+                props.enhancerUsage &&
+                !dictationTakesFooter &&
+                !activePendingProgress ? (
+                  <ComposerQuotaMeter
+                    usage={props.enhancerUsage}
+                    selection={selectedModelSelection}
+                  />
                 ) : null}
                 <div
                   data-chat-composer-actions="right"
