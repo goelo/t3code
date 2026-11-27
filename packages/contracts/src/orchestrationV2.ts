@@ -3212,6 +3212,8 @@ export const OrchestrationV2Command = Schema.Union([
     commandId: CommandId,
     threadId: ThreadId,
     expectedLatestRunId: Schema.optional(RunId),
+    /** A drop into the Settled shelf explicitly removes the pin. */
+    unpin: Schema.optional(Schema.Boolean),
     settledAt: Schema.optional(Schema.DateTimeUtc),
   }),
   /** Rejects changes since snapshotAt or any explicit settled override to preserve user actions. */

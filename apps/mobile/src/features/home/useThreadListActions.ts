@@ -120,6 +120,7 @@ function useThreadActionExecutor(
     thread: EnvironmentThreadShell,
     onStarted?: () => void,
     restoreUnsettledAt?: string | null,
+    options: { unpin?: boolean } = {},
   ) => {
     if (!checkThreadOperationPermission(thread, actionFailureTitle(action))) return false;
     const key = scopedThreadKey(thread.environmentId, thread.id);
@@ -179,7 +180,10 @@ function useThreadActionExecutor(
                       : deleteMutation
               )({
                 environmentId: thread.environmentId,
-                input: { threadId: thread.id },
+                input: {
+                  threadId: thread.id,
+                  ...(action === "settle" && options.unpin === true ? { unpin: true } : {}),
+                },
               }),
         (result) => result._tag === "Success",
       );
@@ -330,17 +334,27 @@ export function useThreadListActions(): {
         }
       },
     });
-  const settleThread = async (thread: EnvironmentThreadShell) => {
+  const settleThread = async (
+    thread: EnvironmentThreadShell,
+    options: { unpin?: boolean } = {},
+  ) => {
     const key = scopedThreadKey(thread.environmentId, thread.id);
-    const plan = ThreadUndo.planThreadUndo("settle", thread);
+    const removesSettledPin = options.unpin === true && thread.settledOverride === "settled";
+    const plan = ThreadUndo.planThreadUndo(removesSettledPin ? "unpin" : "settle", thread);
     let claim: ReturnType<typeof ThreadUndo.begin> | undefined;
-    const succeeded = await executeAction("settle", thread, () => {
-      ThreadUndo.invalidate("pin", key);
-      ThreadUndo.invalidate("snooze", key);
-      claim = ThreadUndo.begin("settle", key);
-    });
+    const succeeded = await executeAction(
+      "settle",
+      thread,
+      () => {
+        ThreadUndo.invalidate("pin", key);
+        ThreadUndo.invalidate("snooze", key);
+        claim = ThreadUndo.begin("settle", key);
+      },
+      undefined,
+      options,
+    );
     if (claim) {
-      if (succeeded) offerUndo(thread, "Settled", claim, plan);
+      if (succeeded) offerUndo(thread, removesSettledPin ? "Unpinned" : "Settled", claim, plan);
       else claim.finish();
     }
     return succeeded;
@@ -680,7 +694,7 @@ export function useThreadListActions(): {
     if (section === "settled") {
       if (!environmentConfigLoaded(thread.environmentId)) return false;
       appAtomRegistry.set(threadDropBusyAtom, true);
-      const settled = await settleThread(thread);
+      const settled = await settleThread(thread, { unpin: true });
       appAtomRegistry.set(threadDropBusyAtom, false);
       return settled;
     }

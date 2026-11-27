@@ -412,26 +412,39 @@ describe("buildThreadListV2Items", () => {
     expect(layout.snoozedCount).toBe(1);
   });
 
-  it("moves a settled pinned thread into the settled shelf — parity with web (#7969)", () => {
-    const layout = buildThreadListV2Items({
-      threads: [
-        makeThread({ id: ThreadId.make("active"), title: "Active" }),
-        makeThread({
-          id: ThreadId.make("pinned-settled"),
-          title: "Pinned while settled",
-          pinnedAt: "2026-06-01T12:00:00.000Z",
-          settledOverride: "settled",
-          settledAt: "2026-06-01T12:00:00.000Z",
-        }),
-      ],
-      environmentId: null,
-      searchQuery: "",
-      now: NOW,
+  it("lists a settled pinned thread once and moves it to Settled when unpinned", () => {
+    const pinned = makeThread({
+      id: ThreadId.make("pinned-settled"),
+      title: "Pinned while settled",
+      pinnedAt: "2026-06-01T12:00:00.000Z",
+      settledOverride: "settled",
+      settledAt: "2026-06-01T12:00:00.000Z",
     });
+    const active = makeThread({ id: ThreadId.make("active"), title: "Active" });
+    const inputs = { environmentId: null, searchQuery: "", now: NOW };
+    const layout = buildThreadListV2Items({ ...inputs, threads: [active, pinned] });
+    expect(layout.items.map((item) => [item.thread.id, item.pinned])).toEqual([
+      ["pinned-settled", true],
+      ["active", false],
+    ]);
+    expect(layout.settledCount).toBe(0);
+    expect(
+      getThreadListV2OrderedSection({
+        threads: [active, pinned],
+        section: "pinned",
+        now: NOW,
+      }).map((row) => row.id),
+    ).toEqual(["pinned-settled"]);
 
-    expect(layout.items.map((item) => item.thread.id)).toEqual(["active", "pinned-settled"]);
-    expect(layout.items.map((item) => item.pinned)).toEqual([false, false]);
-    expect(layout.settledCount).toBe(1);
+    const unpinned = buildThreadListV2Items({
+      ...inputs,
+      threads: [active, { ...pinned, pinnedAt: null }],
+    });
+    expect(unpinned.items.map((item) => [item.thread.id, item.variant])).toEqual([
+      ["active", "card"],
+      ["pinned-settled", "slim"],
+    ]);
+    expect(unpinned.settledCount).toBe(1);
   });
 
   it("snooze hides a pinned thread and wake restores it to the pinned block", () => {

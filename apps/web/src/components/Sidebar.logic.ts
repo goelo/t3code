@@ -1,6 +1,9 @@
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { resolveThreadWorkingStartedAt } from "@t3tools/client-runtime/state/models";
+import {
+  resolveThreadWorkingStartedAt,
+  threadRuntimeIsActive,
+} from "@t3tools/client-runtime/state/models";
 import { isShownUnderParent } from "@t3tools/client-runtime/state/threads";
 import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import { threadPullRequestSearchTerms } from "@t3tools/shared/threadPullRequests";
@@ -19,6 +22,7 @@ import {
 } from "@t3tools/client-runtime/state/thread-search";
 import { foldSearchQuery, rankSearchItems, scoreThreadSearch } from "@t3tools/shared/paletteSearch";
 import {
+  isListedThreadLineage,
   type ContextMenuItem,
   type EnvironmentId,
   type ResolvedKeybindingsConfig,
@@ -61,13 +65,15 @@ export function shouldNavigateAfterThreadPark(input: {
   readonly currentThreadKey: string | null;
   readonly action: "settle" | "snooze";
   readonly now: string;
-  readonly thread: (ThreadSnoozeShell & Pick<SidebarThreadSummary, "settledOverride">) | null;
+  readonly thread:
+    | (ThreadSnoozeShell & Pick<SidebarThreadSummary, "settledOverride" | "pinnedAt">)
+    | null;
 }): boolean {
   return (
     input.threadKey === input.currentThreadKey &&
     input.thread !== null &&
     (input.action === "settle"
-      ? input.thread.settledOverride === "settled"
+      ? input.thread.settledOverride === "settled" && input.thread.pinnedAt == null
       : effectiveSnoozed(input.thread, { now: input.now }))
   );
 }
@@ -199,8 +205,8 @@ export function resolveSidebarThreadSection(input: {
   readonly pinned: boolean;
 }): SidebarSection {
   if (input.snoozed) return "snoozed";
-  if (input.settled) return "settled";
   if (input.pinned) return "pinned";
+  if (input.settled) return "settled";
   return "active";
 }
 
@@ -208,10 +214,11 @@ const SIDEBAR_MARKER_PREFIX = "sidebar-marker-";
 
 export type SidebarListMarker =
   | "pinned-header"
+  | "recent-header"
   | "active-placeholder"
+  | "completed-header"
   | "settled-placeholder"
   | "pinned-divider"
-  | "working-header"
   | "snoozed-header"
   | "settled-header";
 
@@ -232,8 +239,8 @@ function sectionAtSidebarSlot(items: readonly SidebarListItem[], index: number):
   for (let i = 0; i < index && i < items.length; i += 1) {
     const item = items[i]!;
     if (item.kind !== "marker") continue;
-    if (item.marker === "pinned-divider") section = "active";
-    else if (item.marker === "working-header") section = "working";
+    if (item.marker === "pinned-header") section = "pinned";
+    else if (item.marker === "pinned-divider") section = "active";
     else if (item.marker === "snoozed-header") section = "snoozed";
     else if (item.marker === "settled-header") section = "settled";
   }
@@ -254,24 +261,27 @@ export function resolveSidebarDropTarget(
   const activeIndex = items.findIndex((item) => sidebarListItemId(item) === activeKey);
   const overIndex = items.findIndex((item) => sidebarListItemId(item) === overId);
   if (activeIndex === -1 || overIndex === -1 || items[activeIndex]?.kind !== "thread") return null;
+  const over = items[overIndex]!;
+  if (
+    over.kind === "thread"
+      ? over.section === "working"
+      : over.marker === "recent-header" || over.marker === "completed-header"
+  )
+    return null;
   const moved = items.filter((_, index) => index !== activeIndex);
   moved.splice(overIndex, 0, items[activeIndex]!);
-  const section = sectionAtSidebarSlot(moved, overIndex);
+  const section =
+    over.kind === "marker" && over.marker === "pinned-header"
+      ? "pinned"
+      : sectionAtSidebarSlot(moved, overIndex);
   if (section === "working" || section === "snoozed") return null;
   const pinnedOrder: string[] = [];
   const activeOrder: string[] = [];
-  let currentSection: SidebarSection = "pinned";
   for (const item of moved) {
-    if (item.kind === "marker") {
-      if (item.marker === "pinned-divider") currentSection = "active";
-      else if (
-        item.marker === "working-header" ||
-        item.marker === "snoozed-header" ||
-        item.marker === "settled-header"
-      )
-        break;
-    } else if (currentSection === "pinned") pinnedOrder.push(item.key);
-    else activeOrder.push(item.key);
+    if (item.kind !== "thread") continue;
+    const destination = item.key === activeKey ? section : item.section;
+    if (destination === "pinned") pinnedOrder.push(item.key);
+    if (destination === "active") activeOrder.push(item.key);
   }
   return { section, pinnedOrder, activeOrder };
 }
@@ -298,6 +308,22 @@ type SidebarThreadDropPlan =
       readonly unsnooze: boolean;
     }
   | { readonly kind: "settle" };
+
+export function placeSidebarDropInFullOrder(
+  order: readonly string[],
+  visibleOrder: readonly string[],
+  movedKey: string,
+): readonly string[] {
+  const movedIndex = visibleOrder.indexOf(movedKey);
+  if (movedIndex < 0) return order;
+  const before = visibleOrder[movedIndex + 1];
+  const after = visibleOrder[movedIndex - 1];
+  if (before === undefined && after === undefined && order.includes(movedKey)) return order;
+  const rest = order.filter((key) => key !== movedKey);
+  const insertAt =
+    before !== undefined ? rest.indexOf(before) : after !== undefined ? rest.indexOf(after) + 1 : 0;
+  return rest.toSpliced(insertAt, 0, movedKey);
+}
 
 export type SidebarDropVerb = "pin" | "unpin" | "settle" | "unsettle" | "wake";
 
@@ -518,9 +544,10 @@ export function applySidebarThreadDrop<
       unsettledAt: null,
     };
   }
-  const resumed = wasSettled
-    ? { ...awake, settledOverride: "active" as const, settledAt: null, unsettledAt: now }
-    : awake;
+  const resumed =
+    section === "active" && wasSettled
+      ? { ...awake, settledOverride: "active" as const, settledAt: null, unsettledAt: now }
+      : awake;
   return {
     ...resumed,
     pinnedAt: section === "pinned" ? (thread.pinnedAt ?? now) : null,
@@ -767,6 +794,28 @@ export function resolveThreadLastVisitedAt(
   // servers.
   if (serverLastVisitedAt === undefined) return localLastVisitedAt;
   return serverLastVisitedAt ?? undefined;
+}
+
+export function isSidebarThreadCompleted(
+  thread: ThreadStatusInput & Pick<SidebarThreadSummary, "latestUserMessageAt" | "goal">,
+): boolean {
+  const run = thread.latestRun;
+  const completedAt = Date.parse(run?.completedAt ?? "");
+  const lastMessageAt = Date.parse(thread.latestUserMessageAt ?? "");
+  return (
+    run?.status === "completed" &&
+    Number.isFinite(completedAt) &&
+    !(lastMessageAt > completedAt) &&
+    !threadRuntimeIsActive(thread.runtime) &&
+    thread.runtime?.status !== "failed" &&
+    !thread.hasPendingApprovals &&
+    !thread.hasPendingUserInput &&
+    thread.pendingSubagentRequest == null &&
+    (thread.pendingGuestMessageCount ?? 0) === 0 &&
+    !(thread.interactionMode === "plan" && thread.hasActionableProposedPlan) &&
+    thread.goal?.status !== "active" &&
+    !backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])
+  );
 }
 
 export function hasUnseenCompletion(thread: ThreadStatusInput): boolean {
@@ -1459,4 +1508,28 @@ export function sortScopedProjectsForSidebar<
       left.environmentId.localeCompare(right.environmentId) ||
       left.id.localeCompare(right.id),
   );
+}
+
+export function isSidebarHiddenThread(thread: Pick<SidebarThreadSummary, "lineage">): boolean {
+  return !isListedThreadLineage(thread.lineage);
+}
+
+// Subagent and side-chat threads have no sidebar row, so an open one is represented by
+// its nearest listed ancestor. A broken chain (missing parent, cycle,
+// other environment) resolves to the thread itself, which then matches no row.
+export function resolveSidebarRowThreadId(
+  threadId: ThreadId,
+  environmentId: EnvironmentId,
+  threads: readonly Pick<SidebarThreadSummary, "id" | "environmentId" | "lineage">[],
+): ThreadId {
+  const findThread = (id: ThreadId) =>
+    threads.find((thread) => thread.id === id && thread.environmentId === environmentId);
+  const visited = new Set<ThreadId>();
+  let thread = findThread(threadId);
+  while (thread !== undefined && isSidebarHiddenThread(thread)) {
+    if (thread.lineage.parentThreadId === null || visited.has(thread.id)) return threadId;
+    visited.add(thread.id);
+    thread = findThread(thread.lineage.parentThreadId);
+  }
+  return thread?.id ?? threadId;
 }

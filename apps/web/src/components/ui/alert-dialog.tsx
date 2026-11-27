@@ -50,14 +50,17 @@ function AlertDialogViewport({ className, ...props }: AlertDialogPrimitive.Viewp
 
 function AlertDialogPopup({
   className,
+  abovePopover = false,
   bottomStickOnMobile = true,
   portalContainer,
   ...props
 }: AlertDialogPrimitive.Popup.Props & {
+  abovePopover?: boolean;
   bottomStickOnMobile?: boolean;
   portalContainer?: AlertDialogPrimitive.Portal.Props["container"];
 }) {
   const { popupRef, initialFocus } = useDialogActionInitialFocus();
+  const layerClass = abovePopover ? "z-[150]" : undefined;
   const popup = useRender({
     ref: popupRef,
     render: (
@@ -77,9 +80,12 @@ function AlertDialogPopup({
   });
   return (
     <AlertDialogPortal container={portalContainer}>
-      <AlertDialogBackdrop />
+      <AlertDialogBackdrop className={layerClass} />
       <AlertDialogViewport
-        className={cn(bottomStickOnMobile && "max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12")}
+        className={cn(
+          layerClass,
+          bottomStickOnMobile && "max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12",
+        )}
       >
         {popup}
       </AlertDialogViewport>

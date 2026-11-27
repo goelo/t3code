@@ -1625,6 +1625,14 @@ export default function ChatView(props: ChatViewProps) {
       }) as const,
   );
   const timelineEntries = isServerThread ? serverTimelineEntries : draftTimelineEntries;
+  const composerUsage = {
+    providers: providerStatuses,
+    sources: serverConfig?.usageLimitSources ?? EMPTY_USAGE_LIMIT_SOURCES,
+    contextWindow: activeContextWindow,
+    turns: new Set(serverProjection?.runs.map((run) => run.userMessageId)).size,
+    messages: serverProjection?.messages.length ?? 0,
+    workItems: serverTimelineEntries.filter((entry) => entry.kind === "work").length,
+  };
   const timelineMessages = timelineEntries.flatMap((entry) =>
     entry.kind === "message" ? [entry.message] : [],
   );
@@ -3720,6 +3728,7 @@ export default function ChatView(props: ChatViewProps) {
                                 activeThreadId={activeThreadId}
                                 activeThread={activeThread}
                                 activeThreadRuns={serverProjection?.runs ?? EMPTY_RUNS}
+                                enhancerUsage={composerUsage}
                                 promptHistoryEntries={timelineEntries}
                                 forceExpandedOnMobile={
                                   forceExpandedMobileComposer && isDraftHeroState
@@ -4029,6 +4038,8 @@ export default function ChatView(props: ChatViewProps) {
                     sources: serverConfig?.usageLimitSources ?? EMPTY_USAGE_LIMIT_SOURCES,
                     contextWindow: activeContextWindow,
                   }}
+                  enhancerUsage={composerUsage}
+                  modelSelection={activeThread.modelSelection}
                 />
 
                 <PullRequestThreadDialogHost

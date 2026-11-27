@@ -8,7 +8,14 @@ import type { ProviderOptionDescriptor, RuntimeMode } from "@t3tools/contracts";
 import type { EffortDisplay } from "@t3tools/contracts/settings";
 import { getProviderOptionCurrentLabel } from "@t3tools/shared/model";
 import { msg, T, useGT, useMessages } from "gt-react";
-import { CheckIcon, ChevronRightIcon, ChevronUpIcon, WorkflowIcon } from "lucide-react";
+import { useModelTraitMessages } from "../../i18n/modelTraitMessages";
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  RotateCcwIcon,
+  WorkflowIcon,
+} from "lucide-react";
 import { type KeyboardEvent, type ReactNode, use, useRef, useState } from "react";
 
 import { m, type MessageResolver } from "~/i18n/messages";
@@ -23,7 +30,8 @@ import {
 } from "../ui/menu";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import type { ComposerControlSize } from "./ComposerControl";
+import { ComposerControl, type ComposerControlSize } from "./ComposerControl";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { ComposerPermissionsSection, type RuntimeModeOption } from "./ComposerFooterControls";
 import { composerFloatingLayerProps, focusCheckedPermission } from "./composerEventScope";
 import { EffortGlyph, FastBolt, resolveEffortGlyph } from "./EffortGlyph";
@@ -245,6 +253,7 @@ function ColumnRow(props: {
 
 function moveBetweenRows(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  if (event.target instanceof HTMLInputElement && event.target.type === "range") return;
   // An option's side menu is a React child here, but it moves through its own items.
   if (!event.currentTarget.contains(event.target as Node)) return;
   const rows = Array.from(
@@ -260,7 +269,8 @@ function moveBetweenRows(event: KeyboardEvent<HTMLElement>) {
   next.scrollIntoView({ block: "nearest" });
 }
 
-function EffortLevels(props: { traits: TraitsSelectionInput }) {
+function EffortLevels(props: { traits: TraitsSelectionInput; slider?: boolean | undefined }) {
+  const traitMessage = useModelTraitMessages();
   const traits = useTraitsSelection(props.traits);
   const { effort, others } = columnControls(traits.selectDescriptors, traits.booleanDescriptors);
   if (traits.modelIsUnavailable) {
@@ -284,7 +294,9 @@ function EffortLevels(props: { traits: TraitsSelectionInput }) {
     effort?.descriptor.id === traits.primarySelectDescriptor?.id && traits.ultrathinkInBodyText;
   return (
     <>
-      {effort ? <EffortRows control={effort} traits={traits} locked={locked} /> : null}
+      {effort ? (
+        <EffortRows control={effort} traits={traits} locked={locked} slider={props.slider} />
+      ) : null}
       {others.length > 0 ? (
         <div
           className={cn("flex flex-col gap-0.5", effort && "mt-1 border-t border-border/70 pt-1")}
@@ -314,7 +326,13 @@ function EffortLevels(props: { traits: TraitsSelectionInput }) {
 
 type TraitsSelection = ReturnType<typeof useTraitsSelection>;
 
-function EffortRows(props: { control: ColumnControl; traits: TraitsSelection; locked: boolean }) {
+function EffortRows(props: {
+  control: ColumnControl;
+  traits: TraitsSelection;
+  locked: boolean;
+  slider?: boolean | undefined;
+}) {
+  const traitMessage = useModelTraitMessages();
   const gt = useGT();
   const messages = useMessages();
   const { control, traits } = props;
@@ -341,6 +359,61 @@ function EffortRows(props: { control: ColumnControl; traits: TraitsSelection; lo
   const { locked } = props;
   const value = traits.selectValue(control.descriptor);
   const choices = selectableProviderOptionChoices(control.descriptor);
+  if (props.slider && choices.length > 0 && !locked) {
+    const defaultIndex = choices.findIndex((option) => option.isDefault);
+    const selectedIndex = choices.findIndex((option) => option.id === value);
+    const index = selectedIndex < 0 ? Math.max(0, defaultIndex) : selectedIndex;
+    const selected = choices[index];
+    return (
+      <div className="grid gap-2 px-1 py-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium text-primary">
+            {traitMessage(selected?.label ?? descriptor.label)}
+          </span>
+          {defaultIndex >= 0 ? (
+            <button
+              type="button"
+              aria-label={gt("Restore default effort")}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
+              onClick={() => {
+                const choice = choices[defaultIndex];
+                if (choice) traits.changeSelect(control.descriptor, choice.id);
+              }}
+            >
+              <RotateCcwIcon className="size-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={choices.length - 1}
+          step={1}
+          value={index}
+          aria-label={traitMessage(descriptor.label)}
+          aria-valuetext={traitMessage(selected?.label ?? descriptor.label)}
+          className="w-full cursor-pointer accent-primary"
+          onChange={(event) => {
+            const choice = choices[event.currentTarget.valueAsNumber];
+            if (choice) traits.changeSelect(control.descriptor, choice.id);
+          }}
+        />
+        <div className="flex flex-wrap justify-between gap-1">
+          {choices.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={option.id === selected?.id}
+              className="rounded px-1 text-xs text-muted-foreground hover:text-foreground aria-pressed:font-medium aria-pressed:text-primary"
+              onClick={() => traits.changeSelect(control.descriptor, option.id)}
+            >
+              {traitMessage(option.label)}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   // An "Ultrathink:" prefix selects a level the column does not offer.
   const shown = choices.some((option) => option.id === value);
   return (
@@ -711,16 +784,74 @@ export function ComposerPickerFooter(props: {
   runtimeMode: RuntimeMode;
   runtimeModeOptions: ReadonlyArray<RuntimeModeOption>;
   onRuntimeModeChange: (mode: RuntimeMode) => void;
+  onOpenEffort?: (() => void) | undefined;
 }) {
+  const gt = useGT();
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">
-      {props.traits ? <SpeedControl traits={props.traits} /> : null}
-      {props.traits ? <UltracodeControl traits={props.traits} /> : null}
+      {props.traits && !props.onOpenEffort ? <SpeedControl traits={props.traits} /> : null}
+      {props.traits && !props.onOpenEffort ? <UltracodeControl traits={props.traits} /> : null}
       <PermissionsMenu
         runtimeMode={props.runtimeMode}
         options={props.runtimeModeOptions}
         onChange={props.onRuntimeModeChange}
       />
+      {props.onOpenEffort ? (
+        <button
+          type="button"
+          className="rounded px-2 py-1 text-xs hover:bg-accent"
+          onClick={props.onOpenEffort}
+        >
+          {gt("Effort")} <ChevronRightIcon className="inline size-3" aria-hidden />
+        </button>
+      ) : null}
     </div>
+  );
+}
+
+export function ComposerEffortPicker(props: {
+  traits: TraitsSelectionInput;
+  modelLabel: string;
+  suffix: ReactNode;
+  detail: string | null;
+  size: ComposerControlSize;
+  disabled: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenModels: () => void;
+}) {
+  const gt = useGT();
+  return (
+    <Popover open={props.open} onOpenChange={props.onOpenChange}>
+      <PopoverTrigger
+        render={
+          <ComposerControl
+            size={props.size}
+            className="shrink-0"
+            aria-label={gt("Effort")}
+            aria-description={props.detail ?? undefined}
+            disabled={props.disabled}
+            data-composer-shortcut="composer.effort"
+          />
+        }
+      >
+        {props.suffix}
+      </PopoverTrigger>
+      <PopoverPopup side="top" align="end" width="md" {...composerFloatingLayerProps}>
+        <button
+          type="button"
+          className="flex max-w-full items-center gap-1 rounded px-1 text-sm hover:bg-accent"
+          onClick={props.onOpenModels}
+        >
+          <span className="truncate">{props.modelLabel}</span>
+          <ChevronRightIcon className="size-3 shrink-0" aria-hidden />
+        </button>
+        <EffortLevels traits={props.traits} slider />
+        <div className="mt-1 flex flex-wrap gap-1">
+          <SpeedControl traits={props.traits} />
+          <UltracodeControl traits={props.traits} />
+        </div>
+      </PopoverPopup>
+    </Popover>
   );
 }
