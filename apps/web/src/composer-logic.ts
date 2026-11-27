@@ -296,6 +296,20 @@ export function detectComposerTrigger(text: string, cursorInput: number): Compos
   };
 }
 
+/** Opens the command suggestions with the existing draft as the command's argument. */
+export function composerSlashMenuEdit(draft: string): {
+  start: number;
+  replacement: string;
+  cursor: number;
+} {
+  const existing = /^\s*\/\S*/u.exec(draft);
+  const cursor = existing?.[0].length ?? 1;
+  if (existing && detectComposerTrigger(draft, cursor)?.kind === "slash-command") {
+    return { start: cursor, replacement: "", cursor };
+  }
+  return { start: 0, replacement: draft.length > 0 ? "/ " : "/", cursor: 1 };
+}
+
 export function pastedPathQueryLength(
   lineBefore: string,
   pasted: string,

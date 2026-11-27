@@ -29,6 +29,7 @@ import { MessageId, RunId } from "@t3tools/contracts";
 import {
   computeStableMessagesTimelineRows,
   deriveMessagesTimelineRows,
+  timelineFoldDescendants,
   timelineTurnFoldRunIdsByEntryId,
   liveAnswerPreview,
   deriveMessagesTimelineRowsWithState,
@@ -39,6 +40,40 @@ import {
   workEntryReadOutput,
 } from "./MessagesTimeline.logic";
 import { workEntryIconName } from "./TimelineWorkEntryRow.logic";
+
+it("clears descendants of the collapsed turn or attempt while leaving sibling work alone", () => {
+  const createdAt = "2026-11-06T00:00:00Z";
+  const turn = RunId.make("turn");
+  const first = RunAttemptId.make("first");
+  const retry = RunAttemptId.make("retry");
+  const makeWork = (id: string, runId: RunId, attemptId: RunAttemptId): TimelineEntry => ({
+    id,
+    kind: "work",
+    createdAt,
+    entry: { id: `tool:${id}`, runId, createdAt, tone: "tool", label: "Search" },
+    attempt: {
+      id: attemptId,
+      runId,
+      attemptOrdinal: 1,
+      rootNodeId: NodeId.make(id),
+      status: "completed",
+      completedAt: null,
+    },
+  });
+  const entries = [
+    makeWork("first-work", turn, first),
+    makeWork("retry-work", turn, retry),
+    makeWork("sibling-work", RunId.make("other"), RunAttemptId.make("sibling")),
+  ];
+  expect(timelineFoldDescendants(entries, { runId: turn })).toEqual({
+    attempts: new Set([first, retry]),
+    workGroups: new Set(["work-group:first-work", "work-group:retry-work"]),
+    workEntries: new Set(["tool:first-work", "tool:retry-work"]),
+  });
+  expect(timelineFoldDescendants(entries, { attemptId: first }).workEntries).toEqual(
+    new Set(["tool:first-work"]),
+  );
+});
 
 describe("resolveAssistantMessageCopyState", () => {
   it("copies the rendered representation of Codex directives", () => {

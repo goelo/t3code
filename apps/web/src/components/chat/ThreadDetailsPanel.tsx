@@ -1,6 +1,7 @@
 import type {
   EditorId,
   EnvironmentId,
+  ModelSelection,
   ProjectId,
   ProjectScript,
   ResolvedKeybindingsConfig,
@@ -24,6 +25,12 @@ import { useState, type ComponentProps } from "react";
 import { ThreadDetailsCard } from "./ThreadDetailsCard";
 import { OpenInPicker } from "./OpenInPicker";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
+import {
+  ComposerContextMeter,
+  ComposerQuotaMeter,
+  type ComposerUsageInput,
+} from "./ComposerUsageMeters";
+import { isMacPlatform } from "../../lib/utils";
 import { ThreadAutomationsPanel } from "./ThreadAutomationsPanel";
 import { ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
 import { ThreadServersPanel } from "./ThreadServersPanel";
@@ -90,11 +97,14 @@ interface ThreadDetailsPanelProps extends Pick<
   ) => Promise<ProjectScriptActionResult>;
   onDeleteProjectScript: (scriptId: string) => Promise<ProjectScriptActionResult>;
   usage: ThreadDetailsUsageInput;
+  enhancerUsage?: ComposerUsageInput;
+  modelSelection?: ModelSelection;
 }
 
 export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
-  const visible = useClientSettings(resolveThreadDetailsVisibility);
   const gt = useGT();
+  const enhanced = window.desktopBridge !== undefined && isMacPlatform(navigator.platform);
+  const visible = useClientSettings(resolveThreadDetailsVisibility);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const fileScripts = useT3ProjectFileScripts(
     props.environmentId,
@@ -284,10 +294,40 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
                 />
               ) : null}
 
-              {visible.usage ? <ThreadDetailsUsage {...props.usage} /> : null}
+              {visible.usage ? (
+                enhanced && props.enhancerUsage && props.modelSelection ? (
+                  <ThreadDetailsSection
+                    headingId="thread-details-usage-heading"
+                    title={gt("Usage limits")}
+                    showHeading={false}
+                  >
+                    <div className="px-2">
+                      <ComposerQuotaMeter
+                        usage={props.enhancerUsage}
+                        selection={props.modelSelection}
+                        inDetails
+                      />
+                    </div>
+                  </ThreadDetailsSection>
+                ) : (
+                  <ThreadDetailsUsage {...props.usage} />
+                )
+              ) : null}
 
               {visible.context && props.usage.contextWindow ? (
-                <ThreadDetailsContext usage={props.usage.contextWindow} />
+                enhanced && props.enhancerUsage ? (
+                  <ThreadDetailsSection
+                    headingId="thread-details-context-heading"
+                    title={gt("Context window")}
+                    showHeading={false}
+                  >
+                    <div className="px-2">
+                      <ComposerContextMeter usage={props.enhancerUsage} inDetails />
+                    </div>
+                  </ThreadDetailsSection>
+                ) : (
+                  <ThreadDetailsContext usage={props.usage.contextWindow} />
+                )
               ) : null}
 
               {/* Shown only when no section above has content, so an emptied card can be refilled. */}

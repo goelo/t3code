@@ -105,6 +105,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   size?: ComposerControlSize;
   compact?: boolean;
   isComposerOwned?: boolean;
+  enhanced?: boolean;
   disabled?: boolean;
   terminalOpen?: boolean;
   open?: boolean;
@@ -121,7 +122,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   /** Names the suffix for the tooltip and screen readers. */
   triggerDetail?: string | null;
   /** Composer shortcuts this trigger answers besides the picker's own. */
-  triggerShortcuts?: string;
+  triggerShortcuts?: string | undefined;
   /**
    * Docks an effort column beside the list and a footer under both. The popup then stays open
    * until Escape or an outside press, and picking a model moves focus to its levels.
@@ -296,6 +297,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
       environmentId={props.environmentId}
       workspaceCwd={props.workspaceCwd ?? null}
       activeInstanceId={activeInstanceId}
+      enhanced={props.enhanced === true}
       model={props.model}
       {...(props.selectedModels !== undefined ? { selectedModels: props.selectedModels } : {})}
       {...(props.onToggleModel
@@ -344,7 +346,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
       }}
       onOpenChangeComplete={(open) => {
         const target = takeOpenTarget(triggerRef.current);
-        if (open && docked && target) openTarget(target);
+        if (open && (docked || props.enhanced) && target) openTarget(target);
       }}
     >
       <PopoverTrigger
@@ -462,7 +464,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
         align={props.popupAlign ?? "start"}
         // Docked, the popup opens above the composer and slides over it when that space is short,
         // so a short window gets its full height (Floating UI sizes to the viewport) instead of a sliver.
-        {...(docked
+        {...(docked || props.enhanced
           ? { side: "top" as const, collisionAvoidance: { side: "shift", align: "shift" } as const }
           : {})}
         className="before:hidden"
@@ -493,6 +495,11 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
               {props.footer}
             </div>
           </DockedPickerContext>
+        ) : props.enhanced ? (
+          <div className="flex max-h-(--available-height) flex-col">
+            {picker}
+            {props.footer}
+          </div>
         ) : (
           picker
         )}

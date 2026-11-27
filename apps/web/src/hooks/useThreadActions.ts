@@ -838,7 +838,7 @@ export function useThreadActions() {
     return result;
   };
 
-  const settleThread = async (target: ScopedThreadRef) => {
+  const settleThread = async (target: ScopedThreadRef, options: { unpin?: boolean } = {}) => {
     if (!readEnvironmentServerConfigLoaded(target.environmentId)) {
       return AsyncResult.failure(
         Cause.fail(
@@ -853,15 +853,19 @@ export function useThreadActions() {
     // oxlint-disable-next-line react/purity -- runs in an event handler (oxc#27309)
     const nowIso = new Date().toISOString();
     const wokeAt = resolved ? threadWokeAt(resolved.thread, { now: nowIso }) : null;
-    const undoPlan = ThreadUndo.planThreadUndo("settle", resolved?.thread);
-    // An older unpin/snooze Undo would re-pin or re-snooze, and the server
-    // treats either as a promotion that un-settles; settling supersedes them.
+    const removesSettledPin =
+      options.unpin === true && resolved?.thread.settledOverride === "settled";
+    const undoPlan = ThreadUndo.planThreadUndo(
+      removesSettledPin ? "unpin" : "settle",
+      resolved?.thread,
+    );
+    // A settle supersedes the preceding arrangement and snooze undo notices.
     ThreadUndo.invalidate("pin", scopedThreadKey(target));
     ThreadUndo.invalidate("snooze", scopedThreadKey(target));
     const action = ThreadUndo.begin("settle", scopedThreadKey(target));
     const result = await settleThreadMutation({
       environmentId: target.environmentId,
-      input: { threadId: target.threadId },
+      input: { threadId: target.threadId, ...options },
     });
     if (result._tag !== "Success") {
       action.finish();
@@ -871,7 +875,7 @@ export function useThreadActions() {
       markThreadVisited(scopedThreadKey(target), wokeAt);
     }
     showThreadUndoNotice({
-      action: "Settled",
+      action: removesSettledPin ? "Unpinned" : "Settled",
       claim: action,
       undo: () => runUndoPlan(target, undoPlan),
       failureTitle: m(msg("Failed to undo settle")),

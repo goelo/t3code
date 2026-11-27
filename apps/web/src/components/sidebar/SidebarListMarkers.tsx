@@ -1,6 +1,7 @@
 import { CollapsibleSectionHeader } from "../ui/collapsible-section-header";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ArchiveIcon, CircleCheckIcon, Clock3Icon, PinIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect } from "react";
 import { cn } from "~/lib/utils";
 import {
@@ -75,72 +76,115 @@ export function SidebarSectionPlaceholder(props: {
   );
 }
 
-export function SidebarDragBoundary(props: {
-  marker: "pinned-header" | "pinned-divider";
-  label: string;
-  visible: boolean;
-  isDropTarget: boolean;
-}) {
+function SidebarDragBoundaryLabel(props: { label: string; isDropTarget?: boolean | undefined }) {
+  return (
+    <div className="sidebar-drag-boundary-label absolute inset-x-2 top-1 flex h-4 items-center gap-2">
+      <span
+        className={cn(
+          "shrink-0 text-xs font-medium",
+          props.isDropTarget ? "text-primary" : "text-sidebar-foreground/80",
+        )}
+      >
+        {props.label}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          "h-px flex-1",
+          props.isDropTarget ? "bg-primary/50" : "bg-sidebar-foreground/25",
+        )}
+      />
+    </div>
+  );
+}
+
+export function SidebarRecentHeader({ label }: { readonly label: string }) {
   return (
     <SortableSidebarMarker
-      marker={props.marker}
-      data-testid={`sidebar-${props.marker}`}
-      className="pointer-events-none relative mx-0.5 -mb-px h-0"
+      marker="recent-header"
+      data-testid="sidebar-recent-header"
+      className="mx-0.5 flex h-8 items-center px-2 text-xs font-medium text-sidebar-muted-foreground"
     >
-      {props.visible ? (
-        <div className="sidebar-drag-boundary-label absolute inset-x-2 top-1 flex h-4 items-center gap-2">
-          <span
-            className={cn(
-              "shrink-0 text-xs font-medium",
-              props.isDropTarget ? "text-primary" : "text-sidebar-foreground/80",
-            )}
-          >
-            {props.label}
-          </span>
-          <span
-            aria-hidden
-            className={cn(
-              "h-px flex-1",
-              props.isDropTarget ? "bg-primary/50" : "bg-sidebar-foreground/25",
-            )}
-          />
-        </div>
-      ) : null}
+      {label}
     </SortableSidebarMarker>
   );
 }
 
+const stageHeaders = {
+  "pinned-header": {
+    id: "pinned",
+    icon: PinIcon,
+    className: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  },
+  "pinned-divider": {
+    id: "in-progress",
+    icon: Clock3Icon,
+    className: "bg-info/10 text-info-foreground",
+  },
+  "completed-header": {
+    id: "completed",
+    icon: CircleCheckIcon,
+    className: "bg-warning/10 text-warning-foreground",
+  },
+  "settled-header": {
+    id: "settled",
+    icon: ArchiveIcon,
+    className: "bg-sidebar-foreground/5 text-sidebar-muted-foreground",
+  },
+} as const;
+
 export function SidebarSectionHeader(props: {
-  marker: "working-header" | "snoozed-header" | "settled-header";
+  marker: keyof typeof stageHeaders | "snoozed-header";
   label: string;
-  /** A muted trailing count. */
   count: number;
   className?: string;
   dragging?: boolean;
+  boundary?: "drag" | "hidden" | undefined;
   isDropTarget?: boolean;
   toggle: { expanded: boolean; onToggle: () => void };
 }) {
-  const shelf =
-    props.marker === "working-header"
-      ? "working"
-      : props.marker === "snoozed-header"
-        ? "snoozed"
-        : "settled";
+  const stage = props.marker === "snoozed-header" ? null : stageHeaders[props.marker];
+  const shelf = stage?.id ?? "snoozed";
+  const Icon = stage?.icon;
+  if (props.boundary !== undefined) {
+    return (
+      <SortableSidebarMarker
+        marker={props.marker}
+        data-testid={`sidebar-${props.marker}`}
+        className="pointer-events-none relative mx-0.5 -mb-px h-0"
+      >
+        {props.boundary === "drag" ? (
+          <SidebarDragBoundaryLabel label={props.label} isDropTarget={props.isDropTarget} />
+        ) : null}
+      </SortableSidebarMarker>
+    );
+  }
   return (
     <SortableSidebarMarker
       marker={props.marker}
       data-testid={`sidebar-${props.marker}`}
-      className={cn("relative mx-0.5 h-8", props.className)}
+      className={cn("relative mx-0.5 h-8 rounded-md", stage?.className, props.className)}
     >
       <CollapsibleSectionHeader
         data-sidebar-row={`shelf:${shelf}`}
         onClick={props.toggle.onToggle}
         expanded={props.toggle.expanded}
-        tone={props.isDropTarget ? "accent" : props.dragging ? "emphasized" : "muted"}
+        tone={
+          props.isDropTarget
+            ? "accent"
+            : props.dragging
+              ? "emphasized"
+              : stage
+                ? "inherit"
+                : "muted"
+        }
         data-testid={`sidebar-${shelf}-shelf-toggle`}
         accessory={<span className="font-normal tabular-nums">{props.count}</span>}
       >
-        {props.label}
+        <span className="flex items-center gap-1.5">
+          {Icon ? <Icon aria-hidden className="size-3.5 shrink-0" /> : null}
+          <span className="truncate">{props.label}</span>
+        </span>
       </CollapsibleSectionHeader>
     </SortableSidebarMarker>
   );

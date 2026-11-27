@@ -45,7 +45,6 @@ import * as HostProcess from "@t3tools/shared/HostProcess";
 import { msg } from "gt-i18n";
 import { m } from "../i18n/messages.ts";
 
-const DEFAULT_DESKTOP_BACKEND_PORT = 3773;
 const MAX_TCP_PORT = 65_535;
 const DESKTOP_BACKEND_PORT_PROBE_HOSTS = ["127.0.0.1", "0.0.0.0", "::"] as const;
 
@@ -89,6 +88,7 @@ const { logInfo: logStartupInfo, logError: logStartupError } =
 
 const resolveDesktopBackendPort = Effect.fn("resolveDesktopBackendPort")(function* (
   configuredPort: Option.Option<number>,
+  startPort: number,
 ) {
   if (Option.isSome(configuredPort)) {
     return {
@@ -98,7 +98,7 @@ const resolveDesktopBackendPort = Effect.fn("resolveDesktopBackendPort")(functio
   }
 
   const net = yield* NetService.NetService;
-  for (let port = DEFAULT_DESKTOP_BACKEND_PORT; port <= MAX_TCP_PORT; port += 1) {
+  for (let port = startPort; port <= MAX_TCP_PORT; port += 1) {
     let availableOnEveryHost = true;
 
     for (const host of DESKTOP_BACKEND_PORT_PROBE_HOSTS) {
@@ -117,7 +117,7 @@ const resolveDesktopBackendPort = Effect.fn("resolveDesktopBackendPort")(functio
   }
 
   return yield* new DesktopBackendPortUnavailableError({
-    startPort: DEFAULT_DESKTOP_BACKEND_PORT,
+    startPort,
     maxPort: MAX_TCP_PORT,
     hosts: DESKTOP_BACKEND_PORT_PROBE_HOSTS,
   });
@@ -225,7 +225,10 @@ const startLocalBackend = Effect.gen(function* () {
     return false;
   }
 
-  const backendPortSelection = yield* resolveDesktopBackendPort(environment.configuredBackendPort);
+  const backendPortSelection = yield* resolveDesktopBackendPort(
+    environment.configuredBackendPort,
+    environment.backendPortScanStart,
+  );
   const backendPort = backendPortSelection.port;
   yield* logBootstrapInfo(
     backendPortSelection.selectedByScan
@@ -233,7 +236,9 @@ const startLocalBackend = Effect.gen(function* () {
       : "using configured backend port",
     {
       port: backendPort,
-      ...(backendPortSelection.selectedByScan ? { startPort: DEFAULT_DESKTOP_BACKEND_PORT } : {}),
+      ...(backendPortSelection.selectedByScan
+        ? { startPort: environment.backendPortScanStart }
+        : {}),
     },
   );
 
@@ -297,15 +302,17 @@ const bootstrap = Effect.fn("desktop.bootstrap")(function* (backendStarted: bool
   // Only the user's own login shell PATH shows every t3 a new terminal runs; a fresh install has
   // no cached one. Without it, the command is left to Settings.
   const installCli = (yield* DesktopCliCommand.DesktopCliCommand).installOnFirstLaunch;
-  yield* Effect.forkScoped(
-    (yield* DesktopShellEnvironment.DesktopShellEnvironment).awaitUserShellDiscovery.pipe(
-      Effect.flatMap((found) =>
-        found || environment.platform === "win32"
-          ? installCli
-          : logBootstrapInfo("skipped installing the t3 command without the shell PATH"),
+  // The standalone macOS enhancer leaves the `t3` command to the user's own setup.
+  if (environment.platform !== "darwin" || !environment.isPackaged)
+    yield* Effect.forkScoped(
+      (yield* DesktopShellEnvironment.DesktopShellEnvironment).awaitUserShellDiscovery.pipe(
+        Effect.flatMap((found) =>
+          found || environment.platform === "win32"
+            ? installCli
+            : logBootstrapInfo("skipped installing the t3 command without the shell PATH"),
+        ),
       ),
-    ),
-  );
+    );
 
   if (!settings.localEnvironmentEnabled) {
     // The backend config refreshes the launcher when the local environment runs; an update may move the app.

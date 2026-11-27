@@ -16,6 +16,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   clampCollapsedComposerCursor,
   collapseExpandedComposerCursor,
+  composerSlashMenuEdit,
   composerSubmissionIntentForKey,
   composerStateAtPromptEnd,
   detectComposerTrigger,
@@ -48,6 +49,20 @@ const citation: AssistantCitation = {
   suffix: " 後",
 };
 const citationSource = serializeAssistantCitation(citation).replaceAll("+", "%20");
+
+describe("composerSlashMenuEdit", () => {
+  it.each([
+    ["", "/", ""],
+    ["继续检查", "/ 继续检查", ""],
+    ["/Volumes/DevSSD/file.ts", "/ /Volumes/DevSSD/file.ts", ""],
+    [" /btw 继续检查", " /btw 继续检查", "btw"],
+  ])("opens a slash trigger without dropping the draft %j", (draft, expectedText, query) => {
+    const { start, replacement, cursor } = composerSlashMenuEdit(draft);
+    const { text } = replaceTextRange(draft, start, start, replacement);
+    expect(text).toBe(expectedText);
+    expect(detectComposerTrigger(text, cursor)).toMatchObject({ kind: "slash-command", query });
+  });
+});
 
 describe("isPathSuggestionCurrent", () => {
   const searchedTarget = {

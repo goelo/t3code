@@ -38,6 +38,16 @@ const makeEnvironment = (
 ) => DesktopEnvironment.DesktopEnvironment.pipe(Effect.provide(layerEnvironment(overrides, env)));
 
 describe("DesktopEnvironment", () => {
+  it.effect("uses a separate data directory and port range for the packaged enhancer", () =>
+    Effect.gen(function* () {
+      const environment = yield* makeEnvironment(
+        { isPackaged: true },
+        { T3CODE_HOME: "/Users/alice/.t3" },
+      );
+      assert.equal(environment.stateDir, "/Users/alice/.t3-enhancer/userdata");
+      assert.equal(environment.backendPortScanStart, 43773);
+    }),
+  );
   it.effect("uses the packaged Windows server sidecar as the backend root", () =>
     Effect.gen(function* () {
       const environment = yield* makeEnvironment({
@@ -70,6 +80,7 @@ describe("DesktopEnvironment", () => {
 
       assert.equal(development.stateDir, "/Users/alice/.t3/dev");
       assert.equal(production.stateDir, "/Users/alice/.t3/userdata");
+      assert.equal(production.backendPortScanStart, 3773);
     }),
   );
 });

@@ -3,6 +3,7 @@ import type { PromptUltrathink } from "./TraitsPicker";
 import type { ProviderInstanceEntry } from "../../providerInstances";
 import { type AppModelOption } from "../../modelSelection";
 import { useGT, useMessages } from "gt-react";
+import { useState, type ReactNode } from "react";
 import { CircleAlertIcon } from "lucide-react";
 import { CompactComposerControlsMenu } from "./CompactComposerControlsMenu";
 import { ComposerControl } from "./ComposerControl";
@@ -26,6 +27,7 @@ import { useApplyThreadModelPick } from "./useApplyThreadModelPick";
 import { useStableCallback } from "../../hooks/useStableCallback";
 import {
   ComposerEffortColumn,
+  ComposerEffortPicker,
   ComposerPickerFooter,
   describeComposerEffort,
 } from "./ComposerModelEffort";
@@ -41,6 +43,8 @@ import { resolveComposerControlsOwnership } from "./composerControlsOwnership";
 const MODEL_TRIGGER_STATES = "data-popup-open:bg-accent data-popup-open:text-foreground";
 
 export function ComposerControlsBar(props: {
+  enhancedDesktop: boolean;
+  contextMeter: ReactNode;
   environmentId: EnvironmentId;
   workspaceCwd: string | null;
   routeKind: ChatComposerProps["routeKind"];
@@ -184,12 +188,15 @@ export function ComposerControlsBar(props: {
       ]
     : [];
   // Its own element, so typing (which rebuilds the controls around it) leaves it cached.
+  const [effortOpen, setEffortOpen] = useState(false);
+  if ((modelPickerOpen || composerControlsHidden) && effortOpen) setEffortOpen(false);
   const composerModelPicker = (
     <ComposerModelPicker
       environmentId={environmentId}
       workspaceCwd={props.workspaceCwd}
       compact={false}
       isComposerOwned
+      enhanced={props.enhancedDesktop}
       // The trigger grows away from this edge when its model or effort label changes.
       popupAlign={composerControlsCollapsed ? "start" : "end"}
       disabled={providerCatalogPending || isSendBusy}
@@ -219,18 +226,34 @@ export function ComposerControlsBar(props: {
         MODEL_TRIGGER_STATES,
         composerControlsCollapsed ? "min-w-13 shrink text-xs!" : "min-w-13",
       )}
-      triggerSuffix={effort.suffix}
-      triggerDetail={effort.detail}
+      triggerSuffix={props.enhancedDesktop ? null : effort.suffix}
+      triggerDetail={props.enhancedDesktop ? null : effort.detail}
       triggerShortcuts={
-        pickerOwnsModeShortcut ? "composer.effort composer.mode" : "composer.effort"
+        props.enhancedDesktop
+          ? pickerOwnsModeShortcut
+            ? "composer.mode"
+            : undefined
+          : pickerOwnsModeShortcut
+            ? "composer.effort composer.mode"
+            : "composer.effort"
       }
-      effortColumn={<ComposerEffortColumn traits={traitsInput} />}
+      effortColumn={
+        props.enhancedDesktop ? undefined : <ComposerEffortColumn traits={traitsInput} />
+      }
       footer={
         <ComposerPickerFooter
           traits={traitsInput}
           runtimeMode={compatibleRuntimeMode}
           runtimeModeOptions={compatibleRuntimeModeOptions}
           onRuntimeModeChange={handleRuntimeModeChange}
+          onOpenEffort={
+            props.enhancedDesktop && effort.suffix
+              ? () => {
+                  onModelPickerOpenChange(false);
+                  setEffortOpen(true);
+                }
+              : undefined
+          }
         />
       }
       terminalOpen={terminalOpen}
@@ -265,7 +288,24 @@ export function ComposerControlsBar(props: {
     </ComposerControl>
   ) : (
     <>
+      {props.contextMeter}
       {composerModelPicker}
+      {props.enhancedDesktop && traitsInput && effort.suffix ? (
+        <ComposerEffortPicker
+          open={effortOpen && !modelPickerOpen && !composerControlsHidden}
+          onOpenChange={setEffortOpen}
+          onOpenModels={() => {
+            setEffortOpen(false);
+            onModelPickerOpenChange(true);
+          }}
+          traits={traitsInput}
+          modelLabel={selectedModelForPickerWithCustomFallback}
+          suffix={effort.suffix}
+          detail={effort.detail}
+          size={controlSize}
+          disabled={providerCatalogPending || isSendBusy}
+        />
+      ) : null}
 
       <>
         {restingBlockDefs.map((def, index) => {

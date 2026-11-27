@@ -148,6 +148,12 @@ const STATUS_LABEL_BY_STATUS: Partial<Record<ThreadListV2Status, StatusLabel>> =
     iconTintClassName: "accent-warning-foreground",
   },
 };
+const SETTLED_STATUS_LABEL: StatusLabel = {
+  label: "Settled",
+  icon: "checkmark.circle",
+  className: "text-muted-foreground",
+  iconTintClassName: "accent-muted-foreground",
+};
 const DONE_STATUS_LABEL: StatusLabel = {
   label: msg("Done", { $context: "thread status, turn finished" }),
   icon: "checkmark.circle",
@@ -832,6 +838,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   } = props;
   const snoozedRow = props.snoozed === true;
   const pinnedRow = props.pinned === true;
+  const pinnedSettled =
+    pinnedRow && thread.settledOverride === "settled" && props.hasQueuedMessages !== true;
   const dormant = useSwipeRowDormant(props.activationKey);
 
   const selectThread = () => onSelectThread(thread);
@@ -962,7 +970,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const handleMoveDown = useCallback(() => onMoveThread?.(thread, "down"), [onMoveThread, thread]);
   const handleArchive = useCallback(() => onArchiveThread(thread), [onArchiveThread, thread]);
 
-  const canUnsettle = variant === "slim";
+  const canUnsettle = variant === "slim" || pinnedSettled;
   // The gate's only time-dependent edge is the queued-turn grace window, so its
   // expiry is known without a clock: evaluate at the message's own timestamp.
   // A gate held by runtime status has no expiry, and no clock tick opens it.
@@ -978,6 +986,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     snoozeSupported: props.snoozeSupported,
     snoozable: canSnooze(thread, { now: snoozeGateNow }),
     snoozed: snoozedRow,
+    settled: canUnsettle,
   });
   const snoozePresets = resolveThreadListV2SnoozePresets(
     {
@@ -1194,6 +1203,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     autoSettleMenuItems,
     canShareWithGuest,
     canUnsettle,
+    pinnedRow,
     pinMenuItems,
     props.settlementSupported,
     reorderMenuItems,
